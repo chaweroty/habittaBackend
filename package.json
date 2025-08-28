@@ -1,0 +1,32 @@
+{
+  "name": "habitta-backend",
+  "version": "1.0.0",
+  "description": "Backend para Habitta con arquitectura MVC",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "init-db": "node src/scripts/initDb.js"
+  },
+  "keywords": [
+    "express",
+    "mvc",
+    "mysql",
+    "jwt",
+    "zod"
+  ],
+  "author": "Tu nombre",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.14.3",
+    "zod": "^4.1.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
