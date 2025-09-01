@@ -8,7 +8,7 @@
  * @property {string} email - Email del usuario
  * @property {string} password - Contraseña del usuario
  * @property {string} phone - Teléfono del usuario
- * @property {'admin'|'user'} role - Rol del usuario
+ * @property {'admin'|'user'|'propietario'} role - Rol del usuario
  * @property {Date} [creation_date] - Fecha de creación
  */
 
@@ -28,7 +28,7 @@
  * @property {string} email - Email del usuario
  * @property {string} password - Contraseña del usuario
  * @property {string} phone - Teléfono del usuario
- * @property {'admin'|'user'} [role] - Rol del usuario
+ * @property {'admin'|'user'|'propietario'} [role] - Rol del usuario
  */
 
 /**
@@ -36,7 +36,7 @@
  * @property {string} [name] - Nombre del usuario
  * @property {string} [email] - Email del usuario
  * @property {string} [phone] - Teléfono del usuario
- * @property {'admin'|'user'} [role] - Rol del usuario
+ * @property {'admin'|'user'|'propietario'} [role] - Rol del usuario
  */
 
 /**

@@ -1,7 +1,7 @@
 -- Crear base de datos
-CREATE DATABASE IF NOT EXISTS habitta_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS db_habitta CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-USE habitta_db;
+USE db_habitta;
 
 -- Crear tabla de usuarios
 CREATE TABLE IF NOT EXISTS users (

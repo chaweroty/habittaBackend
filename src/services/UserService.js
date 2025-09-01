@@ -30,7 +30,16 @@ class UserService {
       password: hashedPassword
     };
 
-    return this.userRepository.create(userToCreate);
+    // Crear usuario en la base de datos
+    const createdUser = await this.userRepository.create(userToCreate);
+
+    // Si el usuario no es admin, crear suscripción gratuita
+    if (createdUser.role !== 'admin') {
+      const SubscriptionRepository = require('../repositories/SubscriptionRepository');
+      await SubscriptionRepository.createFreeSubscriptionForUser(createdUser.id);
+    }
+
+    return createdUser;
   }
 
   async updateUser(id, userData) {
