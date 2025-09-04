@@ -3,13 +3,15 @@
 
 /**
  * @typedef {Object} User
- * @property {number} [id] - ID del usuario
- * @property {string} name - Nombre del usuario
- * @property {string} email - Email del usuario
- * @property {string} password - Contraseña del usuario
- * @property {string} phone - Teléfono del usuario
+ * @property {number} id - ID único del usuario
+ * @property {string} name - Nombre completo del usuario
+ * @property {string} email - Correo electrónico (único)
+ * @property {string} password - Contraseña hasheada
+ * @property {string} phone - Teléfono de contacto
  * @property {'admin'|'user'|'propietario'} role - Rol del usuario
- * @property {Date} [creation_date] - Fecha de creación
+ * @property {Date} creation_date - Fecha de creación del usuario
+ * @property {Property[]} properties - Propiedades que posee el usuario
+ * @property {Subscription[]} subscriptions - Suscripciones asociadas al usuario
  */
 
 /**
@@ -50,5 +52,7 @@
  * @property {UserWithoutPassword} user - Usuario sin contraseña
  * @property {string} token - Token JWT
  */
+
+// Este archivo es solo para documentación y referencia de los campos del modelo User.
 
 module.exports = {};

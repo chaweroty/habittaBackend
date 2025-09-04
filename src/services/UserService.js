@@ -1,89 +1,109 @@
 const { HashUtils } = require('../utils/hash');
 const { JWTUtils } = require('../utils/jwt');
+const { PrismaClient } = require('../generated/prisma');
+
+const prisma = new PrismaClient();
 
 class UserService {
-  constructor(userRepository) {
-    this.userRepository = userRepository;
-  }
-
   async getAllUsers() {
-    return this.userRepository.findAll();
+    return prisma.user.findMany({
+      orderBy: { creation_date: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        creation_date: true
+      }
+    });
   }
 
   async getUserById(id) {
-    return this.userRepository.findById(id);
+    return prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        creation_date: true
+      }
+    });
+  }
+
+  async getUserByEmail(email) {
+    return prisma.user.findUnique({
+      where: { email }
+    });
+  }
+
+  async emailExists(email, excludeId = null) {
+    const user = await prisma.user.findFirst({
+      where: {
+        email,
+        ...(excludeId && { NOT: { id: excludeId } })
+      }
+    });
+    return !!user;
   }
 
   async createUser(userData) {
-    // Verificar si el email ya existe
-    const existingUser = await this.userRepository.emailExists(userData.email);
+    const existingUser = await this.emailExists(userData.email);
     if (existingUser) {
       throw new Error('El email ya está registrado');
     }
-
-    // Hashear la contraseña
     const hashedPassword = await HashUtils.hashPassword(userData.password);
-
-    // Crear usuario con contraseña hasheada
-    const userToCreate = {
-      ...userData,
-      password: hashedPassword
-    };
-
-    // Crear usuario en la base de datos
-    const createdUser = await this.userRepository.create(userToCreate);
-
-    // Si el usuario no es admin, crear suscripción gratuita
-    if (createdUser.role !== 'admin') {
-      const SubscriptionRepository = require('../repositories/SubscriptionRepository');
-      await SubscriptionRepository.createFreeSubscriptionForUser(createdUser.id);
-    }
-
+    const createdUser = await prisma.user.create({
+      data: {
+        name: userData.name,
+        email: userData.email,
+        password: hashedPassword,
+        phone: userData.phone,
+        role: userData.role || 'user'
+      }
+    });
+    // Ya no se crea suscripción automáticamente
     return createdUser;
   }
 
   async updateUser(id, userData) {
-    // Verificar si el usuario existe
-    const existingUser = await this.userRepository.findById(id);
+    const existingUser = await this.getUserById(id);
     if (!existingUser) {
       throw new Error('Usuario no encontrado');
     }
-
-    // Verificar si el email ya está en uso por otro usuario
     if (userData.email) {
-      const emailExists = await this.userRepository.emailExists(userData.email, id);
+      const emailExists = await this.emailExists(userData.email, id);
       if (emailExists) {
         throw new Error('El email ya está registrado por otro usuario');
       }
     }
-
-    return this.userRepository.update(id, userData);
+    return prisma.user.update({
+      where: { id },
+      data: userData
+    });
   }
 
   async deleteUser(id) {
-    // Verificar si el usuario existe
-    const existingUser = await this.userRepository.findById(id);
+    const existingUser = await this.getUserById(id);
     if (!existingUser) {
       throw new Error('Usuario no encontrado');
     }
-
-    return this.userRepository.delete(id);
+    await prisma.subscription.deleteMany({ where: { id_user: id } });
+    await prisma.user.delete({ where: { id } });
+    return true;
   }
 
   async login(loginData) {
-    // Buscar usuario por email
-    const user = await this.userRepository.findByEmail(loginData.email);
+    const user = await this.getUserByEmail(loginData.email);
     if (!user) {
       throw new Error('Credenciales inválidas');
     }
-
-    // Verificar contraseña
     const isPasswordValid = await HashUtils.comparePassword(loginData.password, user.password);
     if (!isPasswordValid) {
       throw new Error('Credenciales inválidas');
     }
-
-    // Crear usuario sin contraseña para la respuesta
     const userWithoutPassword = {
       id: user.id,
       name: user.name,
@@ -92,27 +112,14 @@ class UserService {
       role: user.role,
       creation_date: user.creation_date
     };
-
-    // Generar token JWT
     const token = JWTUtils.generateToken(userWithoutPassword);
-
-    return {
-      user: userWithoutPassword,
-      token
-    };
+    return { user: userWithoutPassword, token };
   }
 
   async register(userData) {
-    // Crear el usuario
     const newUser = await this.createUser(userData);
-
-    // Generar token JWT para el nuevo usuario
     const token = JWTUtils.generateToken(newUser);
-
-    return {
-      user: newUser,
-      token
-    };
+    return { user: newUser, token };
   }
 }
 

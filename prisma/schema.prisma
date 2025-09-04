@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(uuid())
+  name          String
+  email         String   @unique
+  password      String
+  phone         String
+  role          String
+  creation_date DateTime @default(now())
+  properties    Property[]
+  subscriptions Subscription[]
+  applications  Application[]
+  legalDocuments LegalDocument[]
+}
+
+model Property {
+  id                String      @id @default(uuid())
+  id_owner          String
+  title             String
+  description       String
+  address           String
+  city              String
+  price             Float
+  type              String
+  rooms             Int
+  bathrooms         Int
+  area              Float
+  services          String
+  publication_status String
+  publication_date  DateTime     @default(now())
+  owner             User         @relation(fields: [id_owner], references: [id])
+  subscription      Subscription?
+  images            ImageProperty[]
+  applications      Application[]
+  legalDocuments    LegalDocument[]
+}
+
+model Subscription {
+  id_subscription String   @id @default(uuid())
+  id_owner       String
+  id_property    String   @unique
+  type           String
+  start_date     DateTime @default(now())
+  final_date     DateTime?
+  owner          User     @relation(fields: [id_owner], references: [id])
+  property       Property @relation(fields: [id_property], references: [id])
+}
+
+model ImageProperty {
+  id         String   @id @default(uuid())
+  id_property String
+  url_image  String
+  property   Property @relation(fields: [id_property], references: [id])
+}
+
+model Application {
+  id               String   @id @default(uuid())
+  id_renter        String
+  id_property      String
+  status           String
+  application_date DateTime @default(now())
+  renter           User     @relation(fields: [id_renter], references: [id])
+  property         Property @relation(fields: [id_property], references: [id])
+  legalDocuments   LegalDocument[]
+}
+
+model LegalDocument {
+  id            String   @id @default(uuid())
+  id_user       String
+  id_property   String?
+  id_application String?
+  type          String
+  upload_date   DateTime    @default(now())
+  status        String
+  user          User        @relation(fields: [id_user], references: [id])
+  property      Property?   @relation(fields: [id_property], references: [id])
+  application   Application? @relation(fields: [id_application], references: [id])
+}

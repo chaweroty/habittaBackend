@@ -1,5 +1,9 @@
+const { UserService } = require('../services/UserService');
+const userService = new UserService();
+
 class UserController {
-  constructor(userService) {
+  constructor() {
+    // No inyección de dependencias
     this.userService = userService;
     
     // Bind methods to preserve 'this' context
@@ -31,7 +35,7 @@ class UserController {
   // GET /users/:id
   async getUserById(req, res, next) {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id; // UUID string
       const user = await this.userService.getUserById(id);
       
       if (!user) {
@@ -70,7 +74,7 @@ class UserController {
   // PUT /users/:id
   async updateUser(req, res, next) {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id; // UUID string
       const userData = req.body;
       
       const updatedUser = await this.userService.updateUser(id, userData);
@@ -95,7 +99,7 @@ class UserController {
   // DELETE /users/:id
   async deleteUser(req, res, next) {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id; // UUID string
       const deleted = await this.userService.deleteUser(id);
       
       if (!deleted) {

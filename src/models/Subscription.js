@@ -1,40 +1,18 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const Subscription = sequelize.define('Subscription', {
-  id_subscription: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  id_user: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  plan: {
-    type: DataTypes.ENUM('basico', 'destacado', 'gestion', 'integral'),
-    allowNull: false,
-    defaultValue: 'basico',
-    comment: 'basico: gratuito, destacado: $3/mes, gestion: 2.5% renta (solo propietarios), integral: 5% renta (solo propietarios)'
-  },
-  tipo: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: 'gratuito',
-    comment: 'Tipo de suscripción: gratuito, mensual, porcentaje, etc.'
-  },
-  start_date: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW
-  },
-  end_date: {
-    type: DataTypes.DATE,
-    allowNull: true
-  }
-}, {
-  tableName: 'subscriptions',
-  timestamps: false
-});
+/**
+ * @typedef {Object} Subscription
+ * @property {number} id_subscription - ID único de la suscripción
+ * @property {number} id_owner - ID del usuario propietario
+ * @property {number} id_property - ID de la propiedad asociada
+ * @property {string} type - Tipo de suscripción
+ * @property {Date} start_date - Fecha de inicio de la suscripción
+ * @property {Date} [final_date] - Fecha de finalización de la suscripción
+ * @property {User} owner - Usuario propietario de la suscripción
+ * @property {Property} property - Propiedad asociada a la suscripción
+ */
 
-module.exports = Subscription;
+// Este archivo es solo para documentación y referencia de los campos del modelo Subscription.
+
+module.exports = {};

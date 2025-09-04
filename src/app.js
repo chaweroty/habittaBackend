@@ -2,15 +2,13 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const { getContainer } = require('./container/DIContainer');
-const { createUserRoutes } = require('./routes/userRoutes');
-const { createAuthRoutes } = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 class App {
   constructor() {
     this.app = express();
-    this.container = getContainer();
     
     this.initializeMiddlewares();
     this.initializeRoutes();
@@ -47,8 +45,8 @@ class App {
     });
 
     // Rutas de API
-    this.app.use('/api/auth', createAuthRoutes(this.container.userController));
-    this.app.use('/api/users', createUserRoutes(this.container.userController));
+    this.app.use('/api/auth', authRoutes);
+    this.app.use('/api/users', userRoutes);
 
     // Ruta base
     this.app.get('/', (req, res) => {
@@ -93,13 +91,11 @@ class App {
     // Manejar el cierre graceful de la aplicación
     process.on('SIGTERM', async () => {
       console.log('🔄 Cerrando aplicación...');
-      await this.container.cleanup();
       process.exit(0);
     });
 
     process.on('SIGINT', async () => {
       console.log('🔄 Cerrando aplicación...');
-      await this.container.cleanup();
       process.exit(0);
     });
   }

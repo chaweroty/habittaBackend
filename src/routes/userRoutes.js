@@ -2,8 +2,11 @@ const { Router } = require('express');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validateBody, validateParams } = require('../middleware/validation');
 const { createUserSchema, updateUserSchema, userIdSchema } = require('../schemas/userSchema');
+const { UserController } = require('../controllers/UserController');
 
-const createUserRoutes = (userController) => {
+const userController = new UserController();
+
+const createUserRoutes = () => {
   const router = Router();
 
   // Rutas públicas de usuarios (solo admins pueden ver todos los usuarios)
