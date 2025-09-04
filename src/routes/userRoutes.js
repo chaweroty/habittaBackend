@@ -5,48 +5,35 @@ const { createUserSchema, updateUserSchema, userIdSchema } = require('../schemas
 const { UserController } = require('../controllers/UserController');
 
 const userController = new UserController();
+const router = Router();
 
-const createUserRoutes = () => {
-  const router = Router();
+router.get('/', 
+  authenticate, 
+  authorize(['admin']), 
+  userController.getAllUsers
+);
+router.get('/:id', 
+  authenticate, 
+  validateParams(userIdSchema), 
+  userController.getUserById
+);
+router.post('/', 
+  authenticate, 
+  authorize(['admin']), 
+  validateBody(createUserSchema), 
+  userController.createUser
+);
+router.put('/:id', 
+  authenticate, 
+  validateParams(userIdSchema), 
+  validateBody(updateUserSchema), 
+  userController.updateUser
+);
+router.delete('/:id', 
+  authenticate, 
+  authorize(['admin']), 
+  validateParams(userIdSchema), 
+  userController.deleteUser
+);
 
-  // Rutas públicas de usuarios (solo admins pueden ver todos los usuarios)
-  router.get('/', 
-    authenticate, 
-    authorize(['admin']), 
-    userController.getAllUsers
-  );
-
-  router.get('/:id', 
-    authenticate,
-    validateParams(userIdSchema),
-    userController.getUserById
-  );
-
-  // Solo admins pueden crear usuarios directamente
-  router.post('/',
-    authenticate,
-    authorize(['admin']),
-    validateBody(createUserSchema),
-    userController.createUser
-  );
-
-  // Los usuarios pueden actualizar su propio perfil, admins pueden actualizar cualquiera
-  router.put('/:id',
-    authenticate,
-    validateParams(userIdSchema),
-    validateBody(updateUserSchema),
-    userController.updateUser
-  );
-
-  // Solo admins pueden eliminar usuarios
-  router.delete('/:id',
-    authenticate,
-    authorize(['admin']),
-    validateParams(userIdSchema),
-    userController.deleteUser
-  );
-
-  return router;
-};
-
-module.exports = { createUserRoutes };
+module.exports = router;

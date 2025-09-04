@@ -1,4 +1,4 @@
-const { UserService } = require('../services/UserService');
+const { UserService } = require('../services/UserService.prisma');
 const userService = new UserService();
 
 class UserController {
