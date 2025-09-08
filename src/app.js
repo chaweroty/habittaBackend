@@ -74,7 +74,8 @@ class App {
             getById: 'GET /api/properties/:id',
             create: 'POST /api/properties',
             update: 'PUT /api/properties/:id',
-            delete: 'DELETE /api/properties/:id'
+            delete: 'DELETE /api/properties/:id',
+            getByOwner: 'GET /api/properties/owner/:ownerId'
           }
         }
       });

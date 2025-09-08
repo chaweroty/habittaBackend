@@ -9,4 +9,6 @@ ON DUPLICATE KEY UPDATE name = name;
 
 INSERT INTO user (id, name, email, password, phone, role) VALUES 
 (UUID(), 'Usuario Demo', 'user@habitta.com', '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '0987654321', 'user')
-ON DUPLICATE KEY UPDATE name = name;
+
+
+ON DUPLICATE KEY UPDATE name = name;

@@ -10,6 +10,7 @@ class PropertyController {
     this.getAllProperties = this.getAllProperties.bind(this);
     this.updateProperty = this.updateProperty.bind(this);
     this.deleteProperty = this.deleteProperty.bind(this);
+    this.getPropertiesByOwner = this.getPropertiesByOwner.bind(this);
   }
 
   // POST /properties
@@ -78,6 +79,17 @@ class PropertyController {
         return res.status(404).json({ success: false, message: 'Propiedad no encontrada' });
       }
       res.json({ success: true, message: 'Propiedad eliminada exitosamente' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // GET /properties/owner/:ownerId
+  async getPropertiesByOwner(req, res, next) {
+    try {
+      const ownerId = req.params.ownerId;
+      const properties = await this.propertyService.getPropertiesByOwner(ownerId);
+      res.json({ success: true, data: properties });
     } catch (error) {
       next(error);
     }
