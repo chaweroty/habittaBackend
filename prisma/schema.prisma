@@ -14,18 +14,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserStatus {
+  Verified
+  Unverified
+  Pending
+}
+
 model User {
-  id            String        @id @default(uuid())
-  name          String
-  email         String   @unique
-  password      String
-  phone         String
-  role          String
-  creation_date DateTime @default(now())
-  properties    Property[]
-  subscriptions Subscription[]
-  applications  Application[]
-  legalDocuments LegalDocument[]
+  id               String        @id @default(uuid())
+  name             String
+  email            String        @unique
+  password         String
+  phone            String
+  role             String
+  status           UserStatus    @default(Unverified)
+  verificationCode String?
+  creation_date    DateTime      @default(now())
+  properties       Property[]
+  subscriptions    Subscription[]
+  applications     Application[]
+  legalDocuments   LegalDocument[]
 }
 
 model Property {
