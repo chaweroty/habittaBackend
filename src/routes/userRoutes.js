@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validateBody, validateParams } = require('../middleware/validation');
-const { createUserSchema, updateUserSchema, userIdSchema } = require('../schemas/userSchema');
+const { createUserSchema, updateUserSchema, userIdSchema, requestOwnerRoleSchema } = require('../schemas/userSchema');
 const { UserController } = require('../controllers/UserController');
 
 const userController = new UserController();
@@ -34,6 +34,11 @@ router.delete('/:id',
   authorize(['admin']), 
   validateParams(userIdSchema), 
   userController.deleteUser
+);
+router.post('/be-an-owner',
+  authenticate,
+  validateBody(requestOwnerRoleSchema),
+  userController.requestOwnerRole
 );
 
 module.exports = router;

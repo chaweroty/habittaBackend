@@ -67,7 +67,8 @@ class App {
             getById: 'GET /api/users/:id',
             create: 'POST /api/users',
             update: 'PUT /api/users/:id',
-            delete: 'DELETE /api/users/:id'
+            delete: 'DELETE /api/users/:id',
+            beAnOwner: 'POST /api/users/be-an-owner'
           },
           properties: {
             getAll: 'GET /api/properties',

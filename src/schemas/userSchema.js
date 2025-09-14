@@ -15,6 +15,8 @@ const createUserSchema = z.object({
     .max(15, 'El teléfono no puede tener más de 15 dígitos')
     .regex(/^\d+$/, 'El teléfono solo puede contener números'),
   role: z.enum(['admin', 'user', 'propietario']).optional().default('user'),
+  status: z.enum(['Verified', 'Unverified', 'Pending']).optional(),
+  verificationCode: z.string().optional(),
 });
 
 const updateUserSchema = z.object({
@@ -32,6 +34,8 @@ const updateUserSchema = z.object({
     .regex(/^\d+$/, 'El teléfono solo puede contener números')
     .optional(),
   role: z.enum(['admin', 'user', 'propietario']).optional(),
+  status: z.enum(['Verified', 'Unverified', 'Pending']).optional(),
+  verificationCode: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -43,9 +47,14 @@ const userIdSchema = z.object({
   id: z.string().uuid('El ID debe ser un UUID válido'),
 });
 
+const requestOwnerRoleSchema = z.object({
+  id: z.string().uuid('El ID del usuario debe ser un UUID válido'),
+});
+
 module.exports = {
   createUserSchema,
   updateUserSchema,
   loginSchema,
-  userIdSchema
+  userIdSchema,
+  requestOwnerRoleSchema
 };

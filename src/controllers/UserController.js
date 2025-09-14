@@ -15,6 +15,7 @@ class UserController {
     this.login = this.login.bind(this);
     this.register = this.register.bind(this);
     this.getCurrentUser = this.getCurrentUser.bind(this);
+    this.requestOwnerRole = this.requestOwnerRole.bind(this);
   }
 
   // GET /users
@@ -173,6 +174,30 @@ class UserController {
         success: true,
         message: 'Información del usuario actual',
         data: user
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // POST /users/be-an-owner
+  async requestOwnerRole(req, res, next) {
+    try {
+      const { id } = req.body;
+      
+      const authResponse = await this.userService.requestOwnerRole(id);
+      
+      if (!authResponse) {
+        return res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Solicitud de rol owner enviada exitosamente. El usuario está pendiente de aprobación.',
+        data: authResponse
       });
     } catch (error) {
       next(error);
