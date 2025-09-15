@@ -79,6 +79,8 @@ class UserService {
         throw new Error('El email ya está registrado por otro usuario');
       }
     }
+    const hashedPassword = await HashUtils.hashPassword(userData.password);
+    userData.password = hashedPassword;
     return prisma.user.update({
       where: { id },
       data: userData
@@ -90,7 +92,7 @@ class UserService {
     if (!existingUser) {
       throw new Error('Usuario no encontrado');
     }
-    await prisma.subscription.deleteMany({ where: { id_user: id } });
+    await prisma.subscription.deleteMany({ where: { id_owner: id } });
     await prisma.user.delete({ where: { id } });
     return true;
   }

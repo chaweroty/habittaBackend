@@ -35,7 +35,11 @@ const authorize = (roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    // Convertir roles a array si es un string individual
+    const allowedRoles = Array.isArray(roles) ? roles : [roles];
+    
+    // Verificar si el rol del usuario está en los roles permitidos
+    if (!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         message: 'No tienes permisos para acceder a este recurso'
