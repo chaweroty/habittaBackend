@@ -14,6 +14,8 @@ class UserService {
         email: true,
         phone: true,
         role: true,
+        status: true,
+        verificationCode: true,
         creation_date: true
       }
     });
@@ -28,6 +30,8 @@ class UserService {
         email: true,
         phone: true,
         role: true,
+        status: true,
+        verificationCode: true,
         creation_date: true
       }
     });
@@ -61,7 +65,9 @@ class UserService {
         email: userData.email,
         password: hashedPassword,
         phone: userData.phone,
-        role: userData.role || 'user'
+        role: userData.role || 'user',
+        status: userData.status || 'Unverified',
+        verificationCode: userData.verificationCode || null
       }
     });
     // Ya no se crea suscripción automáticamente
@@ -112,6 +118,8 @@ class UserService {
       email: user.email,
       phone: user.phone,
       role: user.role,
+      status: user.status,
+      verificationCode: user.verificationCode,
       creation_date: user.creation_date
     };
     const token = JWTUtils.generateToken(userWithoutPassword);
@@ -122,6 +130,36 @@ class UserService {
     const newUser = await this.createUser(userData);
     const token = JWTUtils.generateToken(newUser);
     return { user: newUser, token };
+  }
+
+  async requestOwnerRole(id) {
+    const existingUser = await this.getUserById(id);
+    if (!existingUser) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        role: 'owner',
+        status: 'Pending'
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        verificationCode: true,
+        creation_date: true
+      }
+    });
+
+    // Generar nuevo token con el rol actualizado
+    const token = JWTUtils.generateToken(updatedUser);
+    
+    return { user: updatedUser, token };
   }
 }
 

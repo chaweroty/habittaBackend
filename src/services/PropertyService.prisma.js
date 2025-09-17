@@ -5,15 +5,30 @@ class PropertyService {
   async createProperty(propertyData) {
     // propertyData debe incluir: datos de la propiedad y un array de imágenes
     const { images, ...propertyFields } = propertyData;
+    // Asignar valores por defecto si no se envían
+    if (!propertyFields.type) propertyFields.type = 'house';
+    if (!propertyFields.publication_status) propertyFields.publication_status = 'published';
+
+    // Filtrar imágenes válidas
+    let validImages = [];
+    if (Array.isArray(images)) {
+      validImages = images.filter(img => img && typeof img.url_image === 'string' && img.url_image.trim() !== '');
+    }
+
+    // Si no hay al menos una imagen válida, lanzar error
+    if (validImages.length === 0) {
+      const error = new Error('Debe enviar al menos una imagen válida en el array de imágenes.');
+      error.status = 400;
+      throw error;
+    }
+
     // Crear la propiedad
     const property = await prisma.property.create({
       data: {
         ...propertyFields,
-        images: images && images.length > 0
-          ? {
-              create: images.map(url => ({ url_image: url }))
-            }
-          : undefined
+        images: {
+          create: validImages.map(img => ({ url_image: img.url_image }))
+        }
       },
       include: { images: true }
     });
@@ -57,6 +72,13 @@ class PropertyService {
     await prisma.imageProperty.deleteMany({ where: { id_property: id } });
     await prisma.property.delete({ where: { id } });
     return true;
+  }
+
+  async getPropertiesByOwner(ownerId) {
+    return prisma.property.findMany({
+      where: { id_owner: ownerId },
+      include: { images: true }
+    });
   }
 
   // Puedes agregar otros métodos si es necesario
