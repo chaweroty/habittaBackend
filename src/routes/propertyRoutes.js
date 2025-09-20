@@ -12,15 +12,15 @@ router.post('/', authenticate, authorize(['owner']), propertyController.createPr
 router.get('/:id', authenticate, authorize(['owner', 'admin']), propertyController.getProperty);
 
 // GET /properties
- router.get('/', propertyController.getAllProperties);
+ router.get('/', authenticate, propertyController.getAllProperties);
 
 // GET /properties/owner/:ownerId
 router.get('/owner/:ownerId', authenticate, authorize(['owner']), propertyController.getPropertiesByOwner);
 
 // PUT /properties/:id
- router.put('/:id', propertyController.updateProperty);
+ router.put('/:id',authenticate, authorize(['owner']), propertyController.updateProperty);
 
 // DELETE /properties/:id
- router.delete('/:id', propertyController.deleteProperty);
+ router.delete('/:id', authenticate, authorize(['owner']), propertyController.deleteProperty);
 
 module.exports = router;
