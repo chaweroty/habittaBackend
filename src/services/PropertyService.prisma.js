@@ -59,7 +59,7 @@ class PropertyService {
     // Si se envían imágenes nuevas, agregarlas
     if (images && images.length > 0) {
       await prisma.imageProperty.createMany({
-        data: images.map(url => ({ url_image: url, id_property: id }))
+        data: images.map(img => ({ url_image: img.url_image, id_property: id }))
       });
     }
     return prisma.property.findUnique({

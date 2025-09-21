@@ -81,6 +81,7 @@ model Application {
   id_renter        String
   id_property      String
   status           String
+  description      String?
   application_date DateTime @default(now())
   renter           User     @relation(fields: [id_renter], references: [id])
   property         Property @relation(fields: [id_property], references: [id])
