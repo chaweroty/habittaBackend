@@ -92,6 +92,8 @@ class UserService {
         throw new Error('El email ya está registrado por otro usuario');
       }
     }
+    const hashedPassword = await HashUtils.hashPassword(userData.password);
+    userData.password = hashedPassword;
     return prisma.user.update({
       where: { id },
       data: userData
@@ -103,7 +105,6 @@ class UserService {
     if (!existingUser) {
       throw new Error('Usuario no encontrado');
     }
-
     // Usar transacción para garantizar consistencia
     await prisma.$transaction(async (tx) => {
       // 1. Eliminar documentos legales del usuario
@@ -142,7 +143,6 @@ class UserService {
       // 6. Finalmente eliminar el usuario
       await tx.user.delete({ where: { id } });
     });
-
     return true;
   }
 
