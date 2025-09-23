@@ -1,4 +1,5 @@
 const { z, ZodError } = require('zod');
+const { createApplicationSchema, updateApplicationSchema, updateApplicationByRenterSchema } = require('../schemas/applicationSchema');
 
 const validateBody = (schema) => {
   return (req, res, next) => {
@@ -74,8 +75,16 @@ const validateQuery = (schema) => {
   };
 };
 
+// Validaciones específicas para aplicaciones
+const validateApplication = validateBody(createApplicationSchema);
+const validateApplicationUpdate = validateBody(updateApplicationSchema);
+const validateApplicationUpdateByRenter = validateBody(updateApplicationByRenterSchema);
+
 module.exports = {
   validateBody,
   validateParams,
-  validateQuery
+  validateQuery,
+  validateApplication,
+  validateApplicationUpdate,
+  validateApplicationUpdateByRenter
 };

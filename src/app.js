@@ -5,6 +5,7 @@ require('dotenv').config();
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const propertyRoutes = require('./routes/propertyRoutes');
+const applicationRoutes = require('./routes/applicationRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 class App {
@@ -49,6 +50,7 @@ class App {
     this.app.use('/api/auth', authRoutes);
     this.app.use('/api/users', userRoutes);
     this.app.use('/api/properties', propertyRoutes);
+    this.app.use('/api/applications', applicationRoutes);
 
     // Ruta base
     this.app.get('/', (req, res) => {
@@ -77,6 +79,16 @@ class App {
             update: 'PUT /api/properties/:id',
             delete: 'DELETE /api/properties/:id',
             getByOwner: 'GET /api/properties/owner/:ownerId'
+          },
+          applications: {
+            getAll: 'GET /api/applications',
+            getById: 'GET /api/applications/:id',
+            create: 'POST /api/applications',
+            update: 'PUT /api/applications/:id',
+            delete: 'DELETE /api/applications/:id',
+            getMy: 'GET /api/applications/my',
+            getMyOwner: 'GET /api/applications/my-owner',
+            getByProperty: 'GET /api/applications/property/:propertyId'
           }
         }
       });

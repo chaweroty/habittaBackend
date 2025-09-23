@@ -1,6 +1,13 @@
 const { HashUtils } = require('../utils/hash');
 const { JWTUtils } = require('../utils/jwt');
 const { PrismaClient } = require('../generated/prisma');
+const { 
+  sendWelcomeEmail, 
+  sendConfirmationEmail, 
+  sendOwnerVerifiedEmail, 
+  sendPasswordResetEmail,
+  generateVerificationCode 
+} = require('./emailService');
 
 const prisma = new PrismaClient();
 
@@ -98,8 +105,44 @@ class UserService {
     if (!existingUser) {
       throw new Error('Usuario no encontrado');
     }
-    await prisma.subscription.deleteMany({ where: { id_owner: id } });
-    await prisma.user.delete({ where: { id } });
+    // Usar transacción para garantizar consistencia
+    await prisma.$transaction(async (tx) => {
+      // 1. Eliminar documentos legales del usuario
+      await tx.legalDocument.deleteMany({ where: { id_user: id } });
+
+      // 2. Eliminar aplicaciones del usuario (como arrendatario)
+      await tx.application.deleteMany({ where: { id_renter: id } });
+
+      // 3. Obtener propiedades del usuario para eliminar sus dependencias
+      const userProperties = await tx.property.findMany({ where: { id_owner: id } });
+
+      for (const property of userProperties) {
+        // 3.1. Eliminar documentos legales de las propiedades
+        await tx.legalDocument.deleteMany({ where: { id_property: property.id } });
+
+        // 3.2. Eliminar aplicaciones de las propiedades
+        const propertyApplications = await tx.application.findMany({ where: { id_property: property.id } });
+        for (const application of propertyApplications) {
+          await tx.legalDocument.deleteMany({ where: { id_application: application.id } });
+        }
+        await tx.application.deleteMany({ where: { id_property: property.id } });
+
+        // 3.3. Eliminar imágenes de las propiedades
+        await tx.imageProperty.deleteMany({ where: { id_property: property.id } });
+
+        // 3.4. Eliminar suscripciones de las propiedades
+        await tx.subscription.deleteMany({ where: { id_property: property.id } });
+      }
+
+      // 4. Eliminar propiedades del usuario
+      await tx.property.deleteMany({ where: { id_owner: id } });
+
+      // 5. Eliminar suscripciones donde el usuario es propietario (por si quedaron algunas)
+      await tx.subscription.deleteMany({ where: { id_owner: id } });
+
+      // 6. Finalmente eliminar el usuario
+      await tx.user.delete({ where: { id } });
+    });
     return true;
   }
 
@@ -127,8 +170,28 @@ class UserService {
   }
 
   async register(userData) {
-    const newUser = await this.createUser(userData);
+    // Generar código de verificación
+    const verificationCode = generateVerificationCode();
+    
+    // Crear usuario con código de verificación
+    const userDataWithCode = {
+      ...userData,
+      verificationCode,
+      status: 'Unverified'
+    };
+    
+    const newUser = await this.createUser(userDataWithCode);
     const token = JWTUtils.generateToken(newUser);
+    
+    // Enviar emails de forma asíncrona (no bloquear la respuesta)
+    Promise.all([
+      sendWelcomeEmail(newUser.email, newUser.name),
+      sendConfirmationEmail(newUser.email, newUser.name, verificationCode)
+    ]).catch(error => {
+      console.error('❌ Error enviando emails de registro:', error);
+      // No lanzar error para no afectar el registro
+    });
+    
     return { user: newUser, token };
   }
 

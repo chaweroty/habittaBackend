@@ -30,8 +30,7 @@ router.put('/:id',
   userController.updateUser
 );
 router.delete('/:id', 
-  authenticate, 
-  authorize(['admin', 'owner', 'user']), 
+  authenticate,
   validateParams(userIdSchema), 
   userController.deleteUser
 );
