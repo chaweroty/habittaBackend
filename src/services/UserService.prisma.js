@@ -92,11 +92,21 @@ class UserService {
         throw new Error('El email ya está registrado por otro usuario');
       }
     }
-    const hashedPassword = await HashUtils.hashPassword(userData.password);
-    userData.password = hashedPassword;
+
+    // Preparar datos para actualización
+    const updateData = { ...userData };
+
+    // Si la contraseña está vacía o no se proporciona, no la incluimos en la actualización
+    if (!userData.password || userData.password.trim() === '') {
+      delete updateData.password;
+    } else {
+      // Si la contraseña tiene contenido, la hasheamos
+      updateData.password = await HashUtils.hashPassword(userData.password);
+    }
+
     return prisma.user.update({
       where: { id },
-      data: userData
+      data: updateData
     });
   }
 

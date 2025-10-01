@@ -14,7 +14,7 @@ const createUserSchema = z.object({
     .min(10, 'El teléfono debe tener al menos 10 dígitos')
     .max(15, 'El teléfono no puede tener más de 15 dígitos')
     .regex(/^\d+$/, 'El teléfono solo puede contener números'),
-  role: z.enum(['admin', 'user', 'propietario']).optional().default('user'),
+  role: z.enum(['admin', 'user', 'owner']).optional().default('user'),
   status: z.enum(['Verified', 'Unverified', 'Pending']).optional(),
   verificationCode: z.string().optional(),
 });
@@ -33,7 +33,7 @@ const updateUserSchema = z.object({
     .max(15, 'El teléfono no puede tener más de 15 dígitos')
     .regex(/^\d+$/, 'El teléfono solo puede contener números')
     .optional(),
-  role: z.enum(['admin', 'user', 'propietario']).optional(),
+  role: z.enum(['admin', 'user', 'owner']).optional(),
   status: z.enum(['Verified', 'Unverified', 'Pending']).optional(),
   verificationCode: z.string().optional(),
 });

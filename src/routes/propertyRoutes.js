@@ -9,7 +9,7 @@ const router = Router();
 router.post('/', authenticate, authorize(['owner']), propertyController.createProperty);
 
 // GET /properties/:id
-router.get('/:id', authenticate, authorize(['owner', 'admin']), propertyController.getProperty);
+router.get('/:id', authenticate, propertyController.getProperty);
 
 // GET /properties
  router.get('/', authenticate, propertyController.getAllProperties);
