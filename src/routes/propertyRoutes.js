@@ -8,11 +8,17 @@ const router = Router();
 // POST /properties
 router.post('/', authenticate, authorize(['owner']), propertyController.createProperty);
 
-// GET /properties/:id
-router.get('/:id', authenticate, propertyController.getProperty);
-
 // GET /properties
  router.get('/', authenticate, propertyController.getAllProperties);
+
+// GET /properties/published (DEBE IR ANTES que /:id)
+router.get('/published', authenticate, propertyController.getAllPublishedProperties);
+
+// GET /properties/search - Buscar con filtros (DEBE IR ANTES que /:id)
+router.get('/search', authenticate, propertyController.searchPublishedProperties);
+
+// GET /properties/:id
+router.get('/:id', authenticate, propertyController.getProperty);
 
 // GET /properties/owner/:ownerId
 router.get('/owner/:ownerId', authenticate, authorize(['owner']), propertyController.getPropertiesByOwner);

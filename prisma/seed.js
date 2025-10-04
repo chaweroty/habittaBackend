@@ -42,6 +42,7 @@ async function main() {
   // 2. Crear propiedades
   const properties = [];
   const propertyTypes = ['house', 'apartament', 'store', 'office', 'werehouse'];
+  const cities = ['Medellin', 'Bogota', 'Manizales', 'Cartagena', 'Barranquilla', 'Cali', 'Bucaramanga'];
   const publicationStatuses = ['published', 'rented', 'disabled', 'expired'];
   for (let i = 0; i < 10; i++) {
     const owner = faker.helpers.arrayElement(users);
@@ -51,7 +52,7 @@ async function main() {
         title: faker.lorem.words(3),
         description: faker.lorem.sentences(2),
         address: faker.location.streetAddress(),
-        city: faker.location.city(),
+        city: faker.helpers.arrayElement(cities),
         price: faker.number.int({ min: 200000, max: 5000000 }),
         type: faker.helpers.arrayElement(propertyTypes),
         rooms: faker.number.int({ min: 1, max: 5 }),
