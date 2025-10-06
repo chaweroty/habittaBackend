@@ -16,6 +16,8 @@ class UserController {
     this.register = this.register.bind(this);
     this.getCurrentUser = this.getCurrentUser.bind(this);
     this.requestOwnerRole = this.requestOwnerRole.bind(this);
+    this.updatePushToken = this.updatePushToken.bind(this);
+    this.clearPushToken = this.clearPushToken.bind(this);
   }
 
   // GET /users
@@ -198,6 +200,44 @@ class UserController {
         success: true,
         message: 'Solicitud de rol owner enviada exitosamente. El usuario está pendiente de aprobación.',
         data: authResponse
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // PUT /auth/push-token
+  async updatePushToken(req, res, next) {
+    try {
+      const { pushToken } = req.body;
+      const userId = req.user.userId; // Obtener del token JWT
+
+      const updatedUser = await this.userService.updatePushToken(userId, pushToken);
+ 
+      res.json({
+        success: true,
+        message: 'Push token actualizado exitosamente',
+        data: {
+          id: updatedUser.id,
+          pushToken: updatedUser.pushToken
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // DELETE /auth/push-token
+  async clearPushToken(req, res, next) {
+    try {
+      const userId = req.user.userId; // Obtener del token JWT
+
+      // Limpiar el push token al hacer logout
+      await this.userService.clearPushToken(userId);
+
+      res.json({
+        success: true,
+        message: 'Push token limpiado exitosamente.'
       });
     } catch (error) {
       next(error);

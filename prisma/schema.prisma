@@ -29,6 +29,7 @@ model User {
   role             String
   status           UserStatus    @default(Unverified)
   verificationCode String?
+  pushToken        String?       @default("")
   creation_date    DateTime      @default(now())
   properties       Property[]
   subscriptions    Subscription[]
