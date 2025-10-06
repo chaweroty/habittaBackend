@@ -1,11 +1,22 @@
 const { PrismaClient } = require('../generated/prisma');
+const { sendNewApplicationNotification } = require('./pushNotificationService');
+
 const prisma = new PrismaClient();
 
 class ApplicationService {
   async createApplication(applicationData) {
-    // Verificar que la propiedad existe
+    // Verificar que la propiedad existe y obtener información del propietario
     const property = await prisma.property.findUnique({
-      where: { id: applicationData.id_property }
+      where: { id: applicationData.id_property },
+      include: {
+        owner: {
+          select: { 
+            id: true, 
+            name: true, 
+            pushToken: true 
+          }
+        }
+      }
     });
     
     if (!property) {
@@ -27,6 +38,17 @@ class ApplicationService {
       error.status = 400;
       throw error;
     }
+
+    // Obtener información del solicitante
+    const renter = await prisma.user.findUnique({
+      where: { id: applicationData.id_renter },
+      select: { 
+        id: true, 
+        name: true, 
+        email: true, 
+        phone: true 
+      }
+    });
 
     // Crear la aplicación
     const application = await prisma.application.create({
@@ -54,6 +76,23 @@ class ApplicationService {
         }
       }
     });
+
+    // 📱 Enviar notificación push al propietario (si tiene push token)
+    if (property.owner.pushToken && property.owner.pushToken !== '') {
+      try {
+        await sendNewApplicationNotification(
+          property.owner.pushToken,
+          property.title,
+          renter.name
+        );
+        console.log(`📱 Notificación enviada al propietario ${property.owner.name}`);
+      } catch (error) {
+        console.error('❌ Error enviando notificación push:', error);
+        // No lanzar error para no afectar la creación de la aplicación
+      }
+    } else {
+      console.log(`⚠️ Propietario ${property.owner.name} no tiene push token configurado`);
+    }
 
     return application;
   }

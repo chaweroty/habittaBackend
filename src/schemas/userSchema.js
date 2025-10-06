@@ -51,10 +51,17 @@ const requestOwnerRoleSchema = z.object({
   id: z.string().uuid('El ID del usuario debe ser un UUID válido'),
 });
 
+const updatePushTokenSchema = z.object({
+  pushToken: z.string()
+    .min(1, 'El push token es requerido')
+    .regex(/^ExponentPushToken\[/, 'El push token debe ser un token válido de Expo')
+});
+
 module.exports = {
   createUserSchema,
   updateUserSchema,
   loginSchema,
   userIdSchema,
-  requestOwnerRoleSchema
+  requestOwnerRoleSchema,
+  updatePushTokenSchema
 };
