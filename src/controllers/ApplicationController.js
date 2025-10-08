@@ -164,11 +164,14 @@ class ApplicationController {
         // Lógica para propietarios y admins
         if (isOwner || isAdmin) {
           const allowedTransitions = {
-            'pending': ['pre_approved', 'rejected'],
-            'pre_approved': ['approved', 'rejected'],
-            'approved': ['rejected'], // Solo si necesita revertir
-            'rejected': ['pending', 'pre_approved'], // Reactivar si es necesario
-            'withdrawn': [] // No se puede cambiar una aplicación retirada
+            'pending': ['documents_required', 'rejected'],
+            'documents_required': ['pre_approved', 'rejected'],
+            'pre_approved': ['pending'],
+            'approved': ['signed', 'rejected'],
+            'signed': ['terminated'],
+            'rejected': [],
+            'withdrawn': [], // No se puede cambiar una aplicación retirada
+            'terminated': [] // Estado final
           };
           
           if (!allowedTransitions[currentStatus]?.includes(status)) {
@@ -181,21 +184,25 @@ class ApplicationController {
         
         // Lógica para renters
         if (isRenter && !isOwner && !isAdmin) {
-          // Los renters solo pueden:
+          // Los renters pueden:
           // 1. Aceptar una pre-aprobación (pre_approved → approved)
-          // 2. Retirar su aplicación (cualquier estado → withdrawn)
+          // 2. Retirar su aplicación (mayoría de estados → withdrawn)
+          // 3. Desde documents_required puede retirar la aplicación
           const allowedRenterTransitions = {
             'pending': ['withdrawn'],
+            'documents_required': ['withdrawn'],
             'pre_approved': ['approved', 'withdrawn'],
             'approved': ['withdrawn'],
-            'rejected': ['withdrawn'],
-            'withdrawn': []
+            'signed': ['terminated'],
+            'rejected': [],
+            'withdrawn': [],
+            'terminated': [] // Estado final
           };
           
           if (!allowedRenterTransitions[currentStatus]?.includes(status)) {
             return res.status(400).json({
               success: false,
-              message: `Como solicitante, solo puedes ${currentStatus === 'pre_approved' ? 'aceptar la pre-aprobación o ' : ''}retirar tu aplicación`
+              message: `Como solicitante, no puedes cambiar el estado de "${currentStatus}" a "${status}"`
             });
           }
         }
@@ -218,10 +225,16 @@ class ApplicationController {
       
       // Mensaje personalizado según la acción
       let message = 'Aplicación actualizada exitosamente';
-      if (status === 'pre_approved') {
+      if (status === 'documents_required') {
+        message = 'Se requieren documentos adicionales del solicitante';
+      } else if (status === 'pre_approved') {
         message = 'Aplicación pre-aprobada. El solicitante puede confirmar para finalizar el proceso.';
       } else if (status === 'approved') {
         message = 'Aplicación aprobada exitosamente';
+      } else if (status === 'signed') {
+        message = 'Contrato firmado exitosamente';
+      } else if (status === 'terminated') {
+        message = 'Proceso de aplicación terminado';
       } else if (status === 'rejected') {
         message = 'Aplicación rechazada';
       } else if (status === 'withdrawn') {

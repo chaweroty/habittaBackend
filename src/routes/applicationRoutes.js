@@ -7,11 +7,11 @@ const { validateApplication, validateApplicationUpdate } = require('../middlewar
 // POST /api/applications - Crear una nueva aplicación (cualquier usuario autenticado)
 router.post('/', authenticate, validateApplication, ApplicationController.createApplication);
 
-// GET /api/applications/my - Obtener mis aplicaciones (cualquier usuario autenticado)
-router.get('/my', authenticate, ApplicationController.getMyApplications);
+// GET /api/applications/my - Obtener mis aplicaciones (user)
+router.get('/my', authenticate, authorize(['user']), ApplicationController.getMyApplications);
 
-// GET /api/applications/my-owner - Obtener aplicaciones de mis propiedades (cualquier usuario autenticado)
-router.get('/my-owner', authenticate, ApplicationController.getMyOwnerApplications);
+// GET /api/applications/my-owner - Obtener aplicaciones de mis propiedades (owner)
+router.get('/my-owner', authenticate, authorize(['owner']), ApplicationController.getMyOwnerApplications);
 
 // GET /api/applications - Obtener todas las aplicaciones (solo admin)
 router.get('/', authenticate, authorize(['admin']), ApplicationController.getAllApplications);
