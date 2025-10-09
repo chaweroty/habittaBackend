@@ -1,4 +1,5 @@
-const { prisma } = require('../prismaClient'); // Asegúrate de que la ruta sea correcta
+const { PrismaClient } = require('../generated/prisma');
+const prisma = new PrismaClient(); // Instanciar PrismaClient
 
 class ReviewService {
   async createReview(data) {
@@ -26,6 +27,31 @@ class ReviewService {
     return await prisma.review.update({ where: { id }, data: { status: 'deleted' } });
   }
 
+  // Obtener todas las reviews recibidas por un usuario
+  async getReceivedReviews(userId) {
+    return await prisma.review.findMany({
+      where: { 
+        id_receiver: userId,
+        status: { not: 'deleted' } // Excluir reviews eliminadas
+      },
+      select: {
+        id: true,
+        id_application: true,
+        id_author: true,
+        id_receiver: true,
+        rating: true,
+        comment: true,
+        context_type: true,
+        weight: true,
+        status: true,
+        create_date: true
+      },
+      orderBy: {
+        create_date: 'desc'
+      }
+    });
+  }
+
   async createReviewsForApplicationTransition(application, currentStatus, newStatus, actorId) {
     const reviewData = [];
     const now = new Date();
@@ -36,10 +62,10 @@ class ReviewService {
       reviewData.push({
         id_author: application.property.id_owner, // El propietario evalúa
         id_receiver: actorId, // El inquilino es evaluado
-        application_id: application.id,
+        id_application: application.id,
         rating: null,
         comment: null,
-        context_type: 'cancelled_by_tenant',
+        context_type: 'cancelledByTenant',
         weight: 0.5,
         status: 'pending'
       });
@@ -50,10 +76,10 @@ class ReviewService {
       reviewData.push({
         id_author: application.renter.id, // El inquilino evalúa
         id_receiver: actorId, // El propietario es evaluado
-        application_id: application.id,
+        id_application: application.id,
         rating: null,
         comment: null,
-        context_type: 'cancelled_by_owner',
+        context_type: 'cancelledByOwner',
         weight: 0.5,
         status: 'pending'
       });
@@ -65,7 +91,7 @@ class ReviewService {
         {
           id_author: application.property.id_owner, // El propietario evalúa
           id_receiver: application.renter.id, // El inquilino es evaluado
-          application_id: application.id,
+          id_application: application.id,
           rating: null,
           comment: null,
           context_type: 'normal',
@@ -75,7 +101,7 @@ class ReviewService {
         {
           id_author: application.renter.id, // El inquilino evalúa
           id_receiver: application.property.id_owner, // El propietario es evaluado
-          application_id: application.id,
+          id_application: application.id,
           rating: null,
           comment: null,
           context_type: 'normal',

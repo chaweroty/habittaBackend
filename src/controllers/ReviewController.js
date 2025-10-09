@@ -8,6 +8,7 @@ class ReviewController {
     this.createReview = this.createReview.bind(this);
     this.getReview = this.getReview.bind(this);
     this.getAllReviews = this.getAllReviews.bind(this);
+    this.getReceivedReviews = this.getReceivedReviews.bind(this);
     this.updateReview = this.updateReview.bind(this);
     this.deleteReview = this.deleteReview.bind(this);
     this.disableReview = this.disableReview.bind(this);
@@ -54,6 +55,22 @@ class ReviewController {
     try {
       const reviews = await this.reviewService.getAllReviews();
       res.json({ success: true, data: reviews });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // GET /reviews/received/:userId - Obtener todas las reviews recibidas por un usuario
+  async getReceivedReviews(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const reviews = await this.reviewService.getReceivedReviews(userId);
+      
+      res.json({
+        success: true,
+        message: `Se encontraron ${reviews.length} reseñas recibidas`,
+        data: reviews
+      });
     } catch (error) {
       next(error);
     }

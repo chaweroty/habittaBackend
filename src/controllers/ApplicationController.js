@@ -145,6 +145,9 @@ class ApplicationController {
       // Obtener la aplicación para verificar permisos
       const application = await applicationService.getApplication(id);
       
+      // Obtener el estado actual de la aplicación
+      const currentStatus = application.status;
+      
       // Verificar permisos: solo el owner de la propiedad o admin pueden actualizar el status
       const isOwner = application.property.id_owner === req.user.userId;
       const isRenter = application.renter.id === req.user.userId;
@@ -159,7 +162,6 @@ class ApplicationController {
 
       // Validar transiciones de estado según el rol
       if (status) {
-        const currentStatus = application.status;
         
         // Lógica para propietarios y admins
         if (isOwner || isAdmin) {

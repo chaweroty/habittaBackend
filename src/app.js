@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const propertyRoutes = require('./routes/propertyRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const statsRoutes = require('./routes/statsRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 class App {
@@ -53,6 +54,7 @@ class App {
     this.app.use('/api/properties', propertyRoutes);
     this.app.use('/api/applications', applicationRoutes);
     this.app.use('/api/stats', statsRoutes);
+    this.app.use('/api/reviews', reviewRoutes);
 
     // Ruta base
     this.app.get('/', (req, res) => {
@@ -95,6 +97,16 @@ class App {
           },
           stats: {
             ownerStats: 'GET /api/stats/owner/:ownerId'
+          },
+          reviews: {
+            getAll: 'GET /api/reviews',
+            getById: 'GET /api/reviews/:id',
+            getReceived: 'GET /api/reviews/received/:userId',
+            getSummary: 'GET /api/reviews/summary/:userId',
+            create: 'POST /api/reviews',
+            update: 'PUT /api/reviews/:id',
+            delete: 'DELETE /api/reviews/:id',
+            disable: 'PATCH /api/reviews/:id/disable'
           }
         }
       });

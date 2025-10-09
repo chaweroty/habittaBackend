@@ -123,7 +123,7 @@ model Review {
   id_application String
   id_author      String
   id_receiver    String
-  rating         Boolean
+  rating         Boolean?
   comment        String?
   context_type   contextType
   weight         Decimal

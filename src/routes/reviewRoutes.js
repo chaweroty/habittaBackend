@@ -11,6 +11,9 @@ router.post('/', authenticate, authorize(['admin']), reviewController.createRevi
 // GET /reviews
 router.get('/', authenticate, authorize(['admin']), reviewController.getAllReviews);
 
+// GET /reviews/received/:userId - Ver todas las reviews recibidas por un usuario
+router.get('/received/:userId', authenticate, reviewController.getReceivedReviews);
+
 // GET /reviews/:id
 router.get('/:id', authenticate, reviewController.getReview);
 
