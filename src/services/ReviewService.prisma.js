@@ -34,32 +34,28 @@ class ReviewService {
     if ((currentStatus === 'pre_approved' && newStatus === 'withdrawn') ||
         (currentStatus === 'approved' && newStatus === 'withdrawn')) {
       reviewData.push({
-        reviewer_id: application.property.id_owner, // El propietario evalúa
-        reviewed_id: actorId, // El inquilino es evaluado
+        id_author: application.property.id_owner, // El propietario evalúa
+        id_receiver: actorId, // El inquilino es evaluado
         application_id: application.id,
         rating: null,
         comment: null,
         context_type: 'cancelled_by_tenant',
         weight: 0.5,
-        status: 'pending',
-        auto_created: true,
-        created_at: now
+        status: 'pending'
       });
     }
 
     // Escenario 2: Propietario rechaza una solicitud aprobada
     if (currentStatus === 'approved' && newStatus === 'rejected' && actorId === application.property.id_owner) {
       reviewData.push({
-        reviewer_id: application.renter.id, // El inquilino evalúa
-        reviewed_id: actorId, // El propietario es evaluado
+        id_author: application.renter.id, // El inquilino evalúa
+        id_receiver: actorId, // El propietario es evaluado
         application_id: application.id,
         rating: null,
         comment: null,
         context_type: 'cancelled_by_owner',
         weight: 0.5,
-        status: 'pending',
-        auto_created: true,
-        created_at: now
+        status: 'pending'
       });
     }
 
@@ -67,28 +63,24 @@ class ReviewService {
     if (currentStatus === 'signed' && newStatus === 'terminated') {
       reviewData.push(
         {
-          reviewer_id: application.property.id_owner, // El propietario evalúa
-          reviewed_id: application.renter.id, // El inquilino es evaluado
+          id_author: application.property.id_owner, // El propietario evalúa
+          id_receiver: application.renter.id, // El inquilino es evaluado
           application_id: application.id,
           rating: null,
           comment: null,
           context_type: 'normal',
           weight: 1.0,
-          status: 'pending',
-          auto_created: true,
-          created_at: now
+          status: 'pending'
         },
         {
-          reviewer_id: application.renter.id, // El inquilino evalúa
-          reviewed_id: application.property.id_owner, // El propietario es evaluado
+          id_author: application.renter.id, // El inquilino evalúa
+          id_receiver: application.property.id_owner, // El propietario es evaluado
           application_id: application.id,
           rating: null,
           comment: null,
           context_type: 'normal',
           weight: 1.0,
-          status: 'pending',
-          auto_created: true,
-          created_at: now
+          status: 'pending'
         }
       );
     }
@@ -101,7 +93,7 @@ class ReviewService {
 
   async getReviewSummary(userId) {
     const reviews = await prisma.review.findMany({
-      where: { reviewed_id: userId },
+      where: { id_receiver: userId },
       select: {
         context_type: true,
         weight: true,
