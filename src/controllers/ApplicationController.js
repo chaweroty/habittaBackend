@@ -241,6 +241,10 @@ class ApplicationController {
         message = 'Aplicación retirada por el solicitante';
       }
       
+      // Llamar al servicio de reseñas para manejar la creación automática
+      const reviewService = new (require('../services/ReviewService.prisma')).ReviewService();
+      await reviewService.createReviewsForApplicationTransition(application, currentStatus, status, req.user.userId);
+      
       res.json({
         success: true,
         message,
