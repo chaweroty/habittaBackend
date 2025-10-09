@@ -1,11 +1,14 @@
 -- CreateTable
 CREATE TABLE `User` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `id` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `email` VARCHAR(191) NOT NULL,
     `password` VARCHAR(191) NOT NULL,
     `phone` VARCHAR(191) NOT NULL,
     `role` VARCHAR(191) NOT NULL,
+    `status` ENUM('Verified', 'Unverified', 'Pending') NOT NULL DEFAULT 'Unverified',
+    `verificationCode` VARCHAR(191) NULL,
+    `pushToken` VARCHAR(191) NULL DEFAULT '',
     `creation_date` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `User_email_key`(`email`),
@@ -14,8 +17,8 @@ CREATE TABLE `User` (
 
 -- CreateTable
 CREATE TABLE `Property` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `id_owner` INTEGER NOT NULL,
+    `id` VARCHAR(191) NOT NULL,
+    `id_owner` VARCHAR(191) NOT NULL,
     `title` VARCHAR(191) NOT NULL,
     `description` VARCHAR(191) NOT NULL,
     `address` VARCHAR(191) NOT NULL,
@@ -34,9 +37,9 @@ CREATE TABLE `Property` (
 
 -- CreateTable
 CREATE TABLE `Subscription` (
-    `id_subscription` INTEGER NOT NULL AUTO_INCREMENT,
-    `id_owner` INTEGER NOT NULL,
-    `id_property` INTEGER NOT NULL,
+    `id_subscription` VARCHAR(191) NOT NULL,
+    `id_owner` VARCHAR(191) NOT NULL,
+    `id_property` VARCHAR(191) NOT NULL,
     `type` VARCHAR(191) NOT NULL,
     `start_date` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `final_date` DATETIME(3) NULL,
@@ -47,8 +50,8 @@ CREATE TABLE `Subscription` (
 
 -- CreateTable
 CREATE TABLE `ImageProperty` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `id_property` INTEGER NOT NULL,
+    `id` VARCHAR(191) NOT NULL,
+    `id_property` VARCHAR(191) NOT NULL,
     `url_image` VARCHAR(191) NOT NULL,
 
     PRIMARY KEY (`id`)
@@ -56,10 +59,11 @@ CREATE TABLE `ImageProperty` (
 
 -- CreateTable
 CREATE TABLE `Application` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `id_renter` INTEGER NOT NULL,
-    `id_property` INTEGER NOT NULL,
+    `id` VARCHAR(191) NOT NULL,
+    `id_renter` VARCHAR(191) NOT NULL,
+    `id_property` VARCHAR(191) NOT NULL,
     `status` VARCHAR(191) NOT NULL,
+    `description` VARCHAR(191) NULL,
     `application_date` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`id`)
@@ -67,13 +71,29 @@ CREATE TABLE `Application` (
 
 -- CreateTable
 CREATE TABLE `LegalDocument` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `id_user` INTEGER NOT NULL,
-    `id_property` INTEGER NULL,
-    `id_application` INTEGER NULL,
+    `id` VARCHAR(191) NOT NULL,
+    `id_user` VARCHAR(191) NOT NULL,
+    `id_property` VARCHAR(191) NULL,
+    `id_application` VARCHAR(191) NULL,
     `type` VARCHAR(191) NOT NULL,
     `upload_date` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `status` VARCHAR(191) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Review` (
+    `id` VARCHAR(191) NOT NULL,
+    `id_application` VARCHAR(191) NOT NULL,
+    `id_author` VARCHAR(191) NOT NULL,
+    `id_receiver` VARCHAR(191) NOT NULL,
+    `rating` BOOLEAN NOT NULL,
+    `comment` VARCHAR(191) NULL,
+    `context_type` ENUM('normal', 'cancelledByTenant', 'cancelledByOwner', 'breachByTenant', 'breachByOwner', 'other') NOT NULL,
+    `weight` DECIMAL(65, 30) NOT NULL,
+    `status` ENUM('pending', 'published', 'disabled', 'deleted') NOT NULL DEFAULT 'pending',
+    `create_date` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
