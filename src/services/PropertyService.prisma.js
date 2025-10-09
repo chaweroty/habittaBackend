@@ -47,6 +47,13 @@ class PropertyService {
       include: { images: true }
     });
   }
+  async getAllPublishedProperties() {
+    return prisma.property.findMany({
+      where: { publication_status: 'published' },
+      include: { images: true }
+    });
+  }
+
 
   async updateProperty(id, propertyData) {
     const { images, ...propertyFields } = propertyData;
@@ -78,6 +85,61 @@ class PropertyService {
     return prisma.property.findMany({
       where: { id_owner: ownerId },
       include: { images: true }
+    });
+  }
+
+  // Método para filtrar propiedades publicadas
+  async searchPublishedProperties(filters) {
+    const where = {
+      publication_status: 'published'
+    };
+
+    // Filtro por precio (rango)
+    if (filters.minPrice || filters.maxPrice) {
+      where.price = {};
+      if (filters.minPrice) where.price.gte = parseFloat(filters.minPrice);
+      if (filters.maxPrice) where.price.lte = parseFloat(filters.maxPrice);
+    }
+
+    // Filtro por ciudad (búsqueda parcial, case insensitive)
+    if (filters.city) {
+      where.city = {
+        contains: filters.city
+      };
+    }
+
+    // Filtro por habitaciones (mínimo)
+    if (filters.minRooms) {
+      where.rooms = {
+        gte: parseInt(filters.minRooms)
+      };
+    }
+
+    // Filtro por baños (mínimo)
+    if (filters.minBathrooms) {
+      where.bathrooms = {
+        gte: parseInt(filters.minBathrooms)
+      };
+    }
+
+    // Filtro por área (rango)
+    if (filters.minArea || filters.maxArea) {
+      where.area = {};
+      if (filters.minArea) where.area.gte = parseFloat(filters.minArea);
+      if (filters.maxArea) where.area.lte = parseFloat(filters.maxArea);
+    }
+
+    // Filtro por tipo de propiedad
+    if (filters.type) {
+      where.type = filters.type;
+    }
+
+    return prisma.property.findMany({
+      where,
+      include: { images: true },
+      orderBy: {
+        price: 'asc' // Ordenar por precio ascendente por defecto
+      }
     });
   }
 

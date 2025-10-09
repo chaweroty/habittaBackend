@@ -8,6 +8,8 @@ class PropertyController {
     this.createProperty = this.createProperty.bind(this);
     this.getProperty = this.getProperty.bind(this);
     this.getAllProperties = this.getAllProperties.bind(this);
+    this.getAllPublishedProperties = this.getAllPublishedProperties.bind(this);
+    this.searchPublishedProperties = this.searchPublishedProperties.bind(this);
     this.updateProperty = this.updateProperty.bind(this);
     this.deleteProperty = this.deleteProperty.bind(this);
     this.getPropertiesByOwner = this.getPropertiesByOwner.bind(this);
@@ -50,6 +52,31 @@ class PropertyController {
     try {
       const properties = await this.propertyService.getAllProperties();
       res.json({ success: true, data: properties });
+    } catch (error) {
+      next(error);
+    }
+  }
+  // GET /properties/published
+  async getAllPublishedProperties(req, res, next) {
+    try {
+      const properties = await this.propertyService.getAllPublishedProperties();
+      res.json({ success: true, data: properties });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // GET /properties/search - Buscar propiedades con filtros
+  async searchPublishedProperties(req, res, next) {
+    try {
+      const filters = req.query;
+      const properties = await this.propertyService.searchPublishedProperties(filters);
+      res.json({ 
+        success: true, 
+        message: `Se encontraron ${properties.length} propiedades`,
+        data: properties,
+        filters: filters // Incluir los filtros aplicados en la respuesta
+      });
     } catch (error) {
       next(error);
     }

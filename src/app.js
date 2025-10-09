@@ -76,6 +76,7 @@ class App {
           },
           properties: {
             getAll: 'GET /api/properties',
+            getAllPublished: 'GET /api/properties/published',
             getById: 'GET /api/properties/:id',
             create: 'POST /api/properties',
             update: 'PUT /api/properties/:id',

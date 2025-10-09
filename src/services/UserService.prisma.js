@@ -234,6 +234,66 @@ class UserService {
     
     return { user: updatedUser, token };
   }
+
+  async updatePushToken(userId, pushToken) {
+    try {
+      const existingUser = await this.getUserById(userId);
+      if (!existingUser) {
+        throw new Error('Usuario no encontrado');
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { pushToken },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+          status: true,
+          pushToken: true,
+          creation_date: true
+        }
+      });
+
+      console.log(`✅ Push token actualizado para usuario ${userId}`);
+      return updatedUser;
+    } catch (error) {
+      console.error('❌ Error actualizando push token:', error);
+      throw error;
+    }
+  }
+
+  async clearPushToken(userId) {
+    try {
+      const existingUser = await this.getUserById(userId);
+      if (!existingUser) {
+        throw new Error('Usuario no encontrado');
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { pushToken: "" }, // Limpiar el token
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+          status: true,
+          pushToken: true,
+          creation_date: true
+        }
+      });
+
+      console.log(`✅ Push token limpiado para usuario ${userId}`);
+      return updatedUser;
+    } catch (error) {
+      console.error('❌ Error limpiando push token:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = { UserService };
