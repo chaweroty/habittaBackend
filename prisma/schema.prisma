@@ -101,3 +101,32 @@ model LegalDocument {
   property      Property?   @relation(fields: [id_property], references: [id])
   application   Application? @relation(fields: [id_application], references: [id])
 }
+
+enum contextType {
+  normal
+  cancelledByTenant
+  cancelledByOwner
+  breachByTenant
+  breachByOwner
+  other
+}
+
+enum reviewStatus {
+  pending
+  published
+  disabled
+  deleted
+}
+
+model Review {
+  id             String      @id @default(uuid())
+  id_application String
+  id_author      String
+  id_receiver    String
+  rating         Boolean
+  comment        String?
+  context_type   contextType
+  weight         Decimal
+  status         reviewStatus @default(pending)
+  create_date    DateTime    @default(now())
+}
