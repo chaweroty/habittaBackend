@@ -18,6 +18,8 @@ class UserController {
     this.requestOwnerRole = this.requestOwnerRole.bind(this);
     this.updatePushToken = this.updatePushToken.bind(this);
     this.clearPushToken = this.clearPushToken.bind(this);
+    this.resendConfirmation = this.resendConfirmation.bind(this);
+    this.confirmVerification = this.confirmVerification.bind(this);
   }
 
   // GET /users
@@ -238,6 +240,42 @@ class UserController {
       res.json({
         success: true,
         message: 'Push token limpiado exitosamente.'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // POST /auth/resend-confirmation
+  async resendConfirmation(req, res, next) {
+    try {
+      const { id } = req.params;
+      const updatedUser = await this.userService.resendVerificationCodeById(id);
+
+      res.json({
+        success: true,
+        message: 'Código de verificación reenviado',
+        data: {
+          id: updatedUser.id,
+          email: updatedUser.email
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // POST /auth/confirm/:id
+  async confirmVerification(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { verificationCode } = req.body;
+      const authResponse = await this.userService.confirmVerificationById(id, verificationCode);
+
+      res.json({
+        success: true,
+        message: 'Cuenta verificada exitosamente',
+        data: authResponse
       });
     } catch (error) {
       next(error);

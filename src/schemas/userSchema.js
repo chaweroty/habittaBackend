@@ -43,6 +43,14 @@ const loginSchema = z.object({
   password: z.string().min(1, 'La contraseña es requerida'),
 });
 
+const resendVerificationSchema = z.object({
+  email: z.string().email('Debe ser un email válido')
+});
+
+const confirmVerificationSchema = z.object({
+  verificationCode: z.string().regex(/^\d{6}$/, 'El código debe tener 6 dígitos')
+});
+
 const userIdSchema = z.object({
   id: z.string().uuid('El ID debe ser un UUID válido'),
 });
@@ -64,4 +72,6 @@ module.exports = {
   userIdSchema,
   requestOwnerRoleSchema,
   updatePushTokenSchema
+  ,resendVerificationSchema,
+  confirmVerificationSchema
 };

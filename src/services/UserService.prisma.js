@@ -161,10 +161,12 @@ class UserService {
     if (!user) {
       throw new Error('Credenciales inválidas');
     }
+
     const isPasswordValid = await HashUtils.comparePassword(loginData.password, user.password);
     if (!isPasswordValid) {
       throw new Error('Credenciales inválidas');
     }
+
     const userWithoutPassword = {
       id: user.id,
       name: user.name,
@@ -175,6 +177,12 @@ class UserService {
       verificationCode: user.verificationCode,
       creation_date: user.creation_date
     };
+
+    // If user is Unverified, return only the user object (no token)
+    if (user.status === 'Unverified') {
+      return { user: userWithoutPassword };
+    }
+
     const token = JWTUtils.generateToken(userWithoutPassword);
     return { user: userWithoutPassword, token };
   }
@@ -195,7 +203,6 @@ class UserService {
     
     // Enviar emails de forma asíncrona (no bloquear la respuesta)
     Promise.all([
-      sendWelcomeEmail(newUser.email, newUser.name),
       sendConfirmationEmail(newUser.email, newUser.name, verificationCode)
     ]).catch(error => {
       console.error('❌ Error enviando emails de registro:', error);
@@ -233,6 +240,126 @@ class UserService {
     const token = JWTUtils.generateToken(updatedUser);
     
     return { user: updatedUser, token };
+  }
+
+  async resendVerificationCode(email) {
+    // Buscar usuario por email
+    const user = await this.getUserByEmail(email);
+    if (!user) {
+      throw new Error('Usuario no encontrado');
+    }
+
+
+    // Generar nuevo código y actualizar usuario
+    const { generateVerificationCode, sendConfirmationEmail } = require('./emailService');
+    const newCode = generateVerificationCode();
+
+    const updatedUser = await prisma.user.update({
+      where: { email },
+      data: { verificationCode: newCode },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        verificationCode: true,
+        creation_date: true
+      }
+    });
+
+
+    // Enviar email con el nuevo código (no bloquear la respuesta)
+    sendConfirmationEmail(updatedUser.email, updatedUser.name, newCode).catch(err => {
+      console.error('Error enviando código de verificación:', err);
+    });
+
+    return updatedUser;
+  }
+
+  async resendVerificationCodeById(id) {
+    const user = await this.getUserById(id);
+    if (!user) {
+      throw new Error('Usuario no encontrado');
+    }
+
+
+    const { generateVerificationCode, sendConfirmationEmail } = require('./emailService');
+    const newCode = generateVerificationCode();
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: { verificationCode: newCode },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        verificationCode: true,
+        creation_date: true
+      }
+    });
+
+
+    sendConfirmationEmail(updatedUser.email, updatedUser.name, newCode).catch(err => {
+      console.error('Error enviando código de verificación:', err);
+    });
+
+    return updatedUser;
+  }
+
+  async confirmVerificationById(id, verificationCode) {
+    const user = await this.getUserById(id);
+    if (!user) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    if (!user.verificationCode || user.verificationCode !== verificationCode) {
+      throw new Error('Código de verificación inválido');
+    }
+
+    // Actualizar status a Verified y limpiar el código
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        status: 'Verified',
+        verificationCode: null
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        verificationCode: true,
+        creation_date: true
+      }
+    });
+    // Enviar correo de bienvenida (no bloquear la respuesta)
+    const { sendWelcomeEmail } = require('./emailService');
+    sendWelcomeEmail(updatedUser.email, updatedUser.name).catch(err => {
+      console.error('Error enviando correo de bienvenida:', err);
+    });
+
+    // Build user object without password and return token as in login
+    const userWithoutPassword = {
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      role: updatedUser.role,
+      status: updatedUser.status,
+      verificationCode: updatedUser.verificationCode,
+      creation_date: updatedUser.creation_date
+    };
+
+    const token = JWTUtils.generateToken(userWithoutPassword);
+
+    return { user: userWithoutPassword, token };
   }
 
   async updatePushToken(userId, pushToken) {
