@@ -362,6 +362,15 @@ class UserService {
     return { user: userWithoutPassword, token };
   }
 
+  async getStatusById(id) {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, status: true }
+    });
+    if (!user) return null;
+    return { id: user.id, status: user.status };
+  }
+
   async updatePushToken(userId, pushToken) {
     try {
       const existingUser = await this.getUserById(userId);

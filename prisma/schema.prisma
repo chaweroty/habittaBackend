@@ -125,6 +125,13 @@ enum belongsTo {
   application
 }
 
+enum documentStatus {
+  pending
+  approved
+  rejected
+  expired
+}
+
 model LegalDocument {
   id            String   @id @default(uuid())
   id_user       String?
@@ -136,7 +143,7 @@ model LegalDocument {
   notes         String?
   url_document  String
   upload_date   DateTime    @default(now())
-  status        String
+  status        documentStatus
   user          User?        @relation(fields: [id_user], references: [id])
   property      Property?   @relation(fields: [id_property], references: [id])
   application   Application? @relation(fields: [id_application], references: [id])

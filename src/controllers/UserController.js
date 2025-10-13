@@ -20,6 +20,7 @@ class UserController {
     this.clearPushToken = this.clearPushToken.bind(this);
     this.resendConfirmation = this.resendConfirmation.bind(this);
     this.confirmVerification = this.confirmVerification.bind(this);
+    this.checkOwnerStatus = this.checkOwnerStatus.bind(this);
   }
 
   // GET /users
@@ -276,6 +277,35 @@ class UserController {
         success: true,
         message: 'Cuenta verificada exitosamente',
         data: authResponse
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // GET /owners/status - check authenticated owner's status (Verified or Pending)
+  async checkOwnerStatus(req, res, next) {
+    try {
+      // owner id comes from authenticated token
+      if (!req.user || !req.user.userId) {
+        return res.status(401).json({ success: false, message: 'Usuario no autenticado' });
+      }
+
+      const id = req.user.userId;
+      const statusObj = await this.userService.getStatusById(id);
+      if (!statusObj) {
+        return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+      }
+
+      const isVerifiedOrPending = ['Verified', 'Pending'].includes(statusObj.status);
+
+      res.json({
+        success: true,
+        data: {
+          id: statusObj.id,
+          status: statusObj.status,
+          isVerifiedOrPending
+        }
       });
     } catch (error) {
       next(error);
