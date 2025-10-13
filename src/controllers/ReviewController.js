@@ -9,6 +9,7 @@ class ReviewController {
     this.getReview = this.getReview.bind(this);
     this.getAllReviews = this.getAllReviews.bind(this);
     this.getReceivedReviews = this.getReceivedReviews.bind(this);
+    this.getPendingReviewsToWrite = this.getPendingReviewsToWrite.bind(this);
     this.updateReview = this.updateReview.bind(this);
     this.deleteReview = this.deleteReview.bind(this);
     this.disableReview = this.disableReview.bind(this);
@@ -60,16 +61,42 @@ class ReviewController {
     }
   }
 
-  // GET /reviews/received/:userId - Obtener todas las reviews recibidas por un usuario
+    // GET /reviews/received/:userId - Obtener todas las reviews recibidas por un usuario
   async getReceivedReviews(req, res, next) {
     try {
       const { userId } = req.params;
+      
+      // Verificar permisos: solo el usuario mismo o un admin pueden ver sus reviews
+      if (req.user.userId !== userId && req.user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para ver estas reseñas'
+        });
+      }
+
       const reviews = await this.reviewService.getReceivedReviews(userId);
       
       res.json({
         success: true,
         message: `Se encontraron ${reviews.length} reseñas recibidas`,
         data: reviews
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // GET /reviews/pending/me - Obtener reviews pendientes que el usuario actual debe escribir
+  async getPendingReviewsToWrite(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      
+      const pendingReviews = await this.reviewService.getPendingReviewsToWrite(userId);
+      
+      res.json({
+        success: true,
+        message: `Tienes ${pendingReviews.length} reseñas pendientes por escribir`,
+        data: pendingReviews
       });
     } catch (error) {
       next(error);
@@ -84,7 +111,7 @@ class ReviewController {
       if (!review) {
         return res.status(404).json({ success: false, message: 'Reseña no encontrada' });
       }
-      if (req.user.id !== review.id_author) {
+      if (req.user.userId !== review.id_author) {
         return res.status(403).json({ success: false, message: 'Solo el autor puede actualizar la reseña' });
       }
       const parseResult = reviewSchema.pick({ comment: true, rating: true }).safeParse(req.body);
