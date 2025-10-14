@@ -6,15 +6,14 @@ const prisma = new PrismaClient();
 
 // Algunas imágenes reales de propiedades (Unsplash)
 const propertyImages = [
-  'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
-  'https://images.unsplash.com/photo-1460518451285-97b6aa326961',
-  'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd',
+  'https://res.cloudinary.com/dggzv9eld/image/upload/v1760211060/casa-aislada-en-el-campo_dk1elk.jpg',
+  'https://res.cloudinary.com/dggzv9eld/image/upload/v1760211913/carretera-y-la-ciudad_y1izou.jpg',
+  'https://res.cloudinary.com/dggzv9eld/image/upload/v1760212101/encantadora-casa-amarilla-con-ventanas-de-madera-y-jardin-verde_kbncz9.jpg',
   'https://images.unsplash.com/photo-1523217582562-09d0def993a6',
   'https://images.unsplash.com/photo-1507089947368-19c1da9775ae',
-  'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a',
-  'https://images.unsplash.com/photo-1465101046530-73398c7f28ca',
-  'https://images.unsplash.com/photo-1501594907352-04cda38ebc29',
-  'https://images.unsplash.com/photo-1464983953574-0892a716854b',
+  'https://res.cloudinary.com/dggzv9eld/image/upload/v1760211026/hermosa-foto-de-una-casa-moderna-cocina-y-comedor_xbmutm.jpg',
+  'https://res.cloudinary.com/dggzv9eld/image/upload/v1760211020/casa-de-campo-con-arboles-verdes_xay53w.jpg',
+  'https://res.cloudinary.com/dggzv9eld/image/upload/v1760212441/antigua-casa-blanca-y-jardin_zxzose.jpg',
   'https://images.unsplash.com/photo-1472224371017-08207f84aaae'
 ];
 
@@ -33,7 +32,7 @@ async function main() {
         password: hashedPassword,
         phone: faker.phone.number('3#########'),
         role: faker.helpers.arrayElement(userRoles),
-        status: faker.helpers.arrayElement(userStatuses),
+        status: 'Verified',
       }
     });
     users.push(user);
@@ -79,7 +78,7 @@ async function main() {
   }
 
   // 4. Crear aplicaciones (applications)
-  const applicationStatuses = ['pending', 'pre_approved', 'approved', 'rejected', 'withdrawn', 'documents_required', 'signed'];
+  const applicationStatuses = ['pending', 'pending', 'pending', 'rejected', 'withdrawn', 'documents_required'];
   for (let i = 0; i < 15; i++) {
     const property = faker.helpers.arrayElement(properties);
     const renter = faker.helpers.arrayElement(users);

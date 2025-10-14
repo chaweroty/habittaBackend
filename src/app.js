@@ -8,6 +8,7 @@ const propertyRoutes = require('./routes/propertyRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const legalDocumentRoutes = require('./routes/legalDocumentRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 class App {
@@ -55,6 +56,7 @@ class App {
     this.app.use('/api/applications', applicationRoutes);
     this.app.use('/api/stats', statsRoutes);
     this.app.use('/api/reviews', reviewRoutes);
+    this.app.use('/api/legal-documents', legalDocumentRoutes);
 
     // Ruta base
     this.app.get('/', (req, res) => {

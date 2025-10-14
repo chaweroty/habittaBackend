@@ -7,6 +7,13 @@ const { UserController } = require('../controllers/UserController');
 const userController = new UserController();
 const router = Router();
 
+// Endpoint for owners to check their own verification status (owner id comes from token)
+router.get('/owners/status',
+  authenticate,
+  authorize(['owner']),
+  userController.checkOwnerStatus
+);
+
 router.get('/', 
   authenticate, 
   authorize(['admin']), 
@@ -36,6 +43,7 @@ router.delete('/:id',
 );
 router.post('/be-an-owner',
   authenticate,
+  authorize(['user']),
   validateBody(requestOwnerRoleSchema),
   userController.requestOwnerRole
 );
