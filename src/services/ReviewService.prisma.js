@@ -52,6 +52,32 @@ class ReviewService {
     });
   }
 
+  // Obtener las reviews pendientes que el usuario debe escribir como author
+  async getPendingReviewsToWrite(userId) {
+    return await prisma.review.findMany({
+      where: { 
+        id_author: userId,
+        status: 'pending', // Solo reviews pendientes
+        rating: null // Reviews que aún no han sido completadas
+      },
+      select: {
+        id: true,
+        id_application: true,
+        id_author: true,
+        id_receiver: true,
+        rating: true,
+        comment: true,
+        context_type: true,
+        weight: true,
+        status: true,
+        create_date: true
+      },
+      orderBy: {
+        create_date: 'desc'
+      }
+    });
+  }
+
   async createReviewsForApplicationTransition(application, currentStatus, newStatus, actorId) {
     const reviewData = [];
     const now = new Date();

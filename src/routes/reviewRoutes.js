@@ -14,6 +14,9 @@ router.get('/', authenticate, authorize(['admin']), reviewController.getAllRevie
 // GET /reviews/received/:userId - Ver todas las reviews recibidas por un usuario
 router.get('/received/:userId', authenticate, reviewController.getReceivedReviews);
 
+// GET /reviews/pending/me - Ver reviews pendientes que el usuario actual debe escribir
+router.get('/pending/me', authenticate, reviewController.getPendingReviewsToWrite);
+
 // GET /reviews/:id
 router.get('/:id', authenticate, reviewController.getReview);
 
