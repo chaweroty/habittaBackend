@@ -54,7 +54,8 @@ class ReviewService {
 
   // Obtener las reviews pendientes que el usuario debe escribir como author
   async getPendingReviewsToWrite(userId) {
-    return await prisma.review.findMany({
+    // Obtener reviews pendientes (sin relaciones porque Review no define relations explícitas)
+    const reviews = await prisma.review.findMany({
       where: { 
         id_author: userId,
         status: 'pending', // Solo reviews pendientes
@@ -76,6 +77,53 @@ class ReviewService {
         create_date: 'desc'
       }
     });
+
+    if (!reviews || reviews.length === 0) return reviews;
+
+    // Recolectar applicationIds y receiverIds para enriquecer la información
+    const applicationIds = Array.from(new Set(reviews.map(r => r.id_application).filter(Boolean)));
+    const receiverIds = Array.from(new Set(reviews.map(r => r.id_receiver).filter(Boolean)));
+
+    // Traer aplicaciones con el título de la propiedad relacionada
+    const applications = applicationIds.length > 0
+      ? await prisma.application.findMany({
+          where: { id: { in: applicationIds } },
+          select: {
+            id: true,
+            property: {
+              select: { title: true }
+            }
+          }
+        })
+      : [];
+
+    // Map de applicationId -> property title
+    const appPropMap = {};
+    for (const a of applications) {
+      appPropMap[a.id] = a.property?.title || null;
+    }
+
+    // Traer nombres de los usuarios receivers
+    const receivers = receiverIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: receiverIds } },
+          select: { id: true, name: true }
+        })
+      : [];
+
+    const receiverMap = {};
+    for (const u of receivers) {
+      receiverMap[u.id] = u.name || null;
+    }
+
+    // Enriquecer cada review con property_title y receiver_name
+    const enriched = reviews.map(r => ({
+      ...r,
+      property_title: r.id_application ? appPropMap[r.id_application] || null : null,
+      receiver_name: r.id_receiver ? receiverMap[r.id_receiver] || null : null
+    }));
+
+    return enriched;
   }
 
   async createReviewsForApplicationTransition(application, currentStatus, newStatus, actorId) {

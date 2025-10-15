@@ -32,6 +32,18 @@ class PropertyService {
       },
       include: { images: true }
     });
+
+    // Crear subscription automática si corresponde (extraído a SubscriptionService)
+    try {
+      const { SubscriptionService } = require('./SubscriptionService.prisma');
+      const subscriptionService = new SubscriptionService();
+      const planId = propertyFields.id_plan ? propertyFields.id_plan : 1;
+      // Pass property and planId; the service will fetch the plan if needed
+      await subscriptionService.createAutomaticForProperty(property, planId);
+    } catch (err) {
+      console.error('Error creando subscription automática (via SubscriptionService):', err);
+    }
+
     return property;
   }
 

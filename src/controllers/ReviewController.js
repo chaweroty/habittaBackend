@@ -114,7 +114,7 @@ class ReviewController {
       if (req.user.userId !== review.id_author) {
         return res.status(403).json({ success: false, message: 'Solo el autor puede actualizar la reseña' });
       }
-      const parseResult = reviewSchema.pick({ comment: true, rating: true }).safeParse(req.body);
+      const parseResult = reviewSchema.pick({ comment: true, rating: true, status: true }).safeParse(req.body);
       if (!parseResult.success) {
         return res.status(400).json({ success: false, errors: parseResult.error.errors });
       }

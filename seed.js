@@ -1,7 +1,7 @@
 const { faker } = require('@faker-js/faker');
 
-const { PrismaClient } = require('../src/generated/prisma');
-const { HashUtils } = require('../src/utils/hash');
+const { PrismaClient } = require('./src/generated/prisma');
+const { HashUtils } = require('./src/utils/hash');
 const prisma = new PrismaClient();
 
 // Algunas imágenes reales de propiedades (Unsplash)
@@ -79,9 +79,31 @@ async function main() {
 
   // 4. Crear aplicaciones (applications)
   const applicationStatuses = ['pending', 'pending', 'pending', 'rejected', 'withdrawn', 'documents_required'];
+  // Filtrar usuarios con role 'user' para asignar como renters
+  let renters = users.filter(u => u.role === 'user');
+  // Si hay pocos renters, crear usuarios adicionales con role 'user'
+  const neededRenters = 8;
+  if (renters.length < neededRenters) {
+    const toCreate = neededRenters - renters.length;
+    for (let i = 0; i < toCreate; i++) {
+      const newUser = await prisma.user.create({
+        data: {
+          name: faker.person.fullName(),
+          email: faker.internet.email(),
+          password: hashedPassword,
+          phone: faker.phone.number('3#########'),
+          role: 'user',
+          status: 'Verified'
+        }
+      });
+      users.push(newUser);
+      renters.push(newUser);
+    }
+  }
+
   for (let i = 0; i < 15; i++) {
     const property = faker.helpers.arrayElement(properties);
-    const renter = faker.helpers.arrayElement(users);
+    const renter = faker.helpers.arrayElement(renters);
     await prisma.application.create({
       data: {
         id_renter: renter.id,
@@ -90,6 +112,57 @@ async function main() {
         description: faker.lorem.sentence(),
       }
     });
+  }
+
+// --- Crear planes de negocio si no existen ---
+  const planCount = await prisma.plan.count();
+  if (planCount === 0) {
+    const plansData = [
+      {
+        name: 'Plan Básico',
+        price: 0,
+        duration_days: 15, // duración representada en días (15 días)
+        features: `Publicación de propiedades sin costo.,
+Duración limitada: la publicación expira tras 15 días.,
+Visibilidad estándar en búsquedas. Ideal para propietarios ocasionales.`
+      },
+      {
+        name: 'Plan Destacado',
+        price: 3, // $3/mes
+        duration_days: 30, // 0 = sin límite de tiempo mientras esté activo
+        features: `Publicación sin límite de tiempo (vigente hasta concretar arriendo).,
+Propiedad destacada en búsquedas y recomendaciones.,
+Estadísticas básicas (visitas y clicks).`
+      },
+      {
+        name: 'Plan Gestión',
+        price: 0.025, // 2.5% sobre la renta representado como decimal
+        duration_days: 30,
+        features: `Incluye todo lo del Plan Destacado.,
+2.5%/renta mensual.,
+Verificación de antecedentes de inquilinos.,
+Gestión de pagos (recordatorios y cobros automáticos).,
+Soporte técnico (atención remota).,
+Opción de contratar un seguro adicional para imprevistos.`
+      },
+      {
+        name: 'Plan Integral',
+        price: 0.05, // 5% sobre la renta representado como decimal
+        duration_days: 30,
+        features: `Incluye todo lo del Plan Gestión.,
+5%/renta mensual.,
+Coordinación y verificación de mantenimientos.,
+Atención presencial en caso de emergencias.,
+Estadísticas avanzadas: comparación de precios, predicción de ingresos, reportes.,
+Incluye el seguro para cubrir imprevistos.`
+      }
+    ];
+
+    for (const p of plansData) {
+      await prisma.plan.create({ data: p });
+    }
+  } else {
+    console.log(`🔁 Saltando creación de plans (ya existen ${planCount})`);
   }
 
   console.log('✅ Seed de datos de desarrollo completado!');

@@ -64,10 +64,10 @@ model Property {
 }
 
 model Plan {
-  id      String   @id @default(uuid())
+  id      Int      @id @default(autoincrement())
   name         String
   price        Float
-  duration_months Int
+  duration_days Int
   features     String
 
   subscriptions Subscription[]
@@ -85,7 +85,7 @@ model Subscription {
   id String   @id @default(uuid())
   id_owner       String
   id_property    String   @unique
-  id_plan        String
+  id_plan        Int
   start_date     DateTime @default(now())
   final_date     DateTime?
   status         suscriptionStatus @default(pending_payment)
@@ -229,13 +229,13 @@ model Payment {
   description    String?
   amount         Float
   currency       String      @default("COP")
-  method         PaymentMethod
-  payment_date   DateTime
+  method         PaymentMethod?
+  payment_date   DateTime?
   due_date       DateTime?
-  reference_code String
+  reference_code String?     @unique
   notes          String?
   created_at     DateTime    @default(now())
-  status         PaymentStatus
+  status         PaymentStatus @default(pending)
 
   payer          User        @relation(fields: [id_payer], references: [id], name: "PayerRelation")
   receiver       User?       @relation(fields: [id_receiver], references: [id], name: "ReceiverRelation")
