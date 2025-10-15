@@ -24,7 +24,7 @@ router.get('/:id', authenticate, reviewController.getReview);
 router.get('/summary/:userId', authenticate, reviewController.getReviewSummary);
 
 // PUT /reviews/:id
-router.put('/:id', authenticate, authorize(['user']), reviewController.updateReview);
+router.put('/:id', authenticate,reviewController.updateReview);
 
 // DELETE /reviews/:id
 router.delete('/:id', authenticate, reviewController.deleteReview);
