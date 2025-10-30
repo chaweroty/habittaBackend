@@ -41,6 +41,13 @@ model User {
   paymentsReceived Payment[] @relation("ReceiverRelation")
 }
 
+enum publicationStatus {
+  published
+  rented
+  disabled
+  expired
+}
+
 model Property {
   id                String      @id @default(uuid())
   id_owner          String
@@ -54,7 +61,7 @@ model Property {
   bathrooms         Int
   area              Float
   services          String
-  publication_status String
+  publication_status publicationStatus @default(published)
   publication_date  DateTime     @default(now())
   owner             User         @relation(fields: [id_owner], references: [id])
   subscription      Subscription?

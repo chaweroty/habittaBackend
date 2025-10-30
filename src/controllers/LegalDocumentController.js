@@ -1,7 +1,10 @@
 const { LegalDocumentService } = require('../services/LegalDocumentService.prisma');
 const { PrismaClient } = require('../generated/prisma');
+const { sendOwnerVerifiedEmail } = require('../services/emailService');
+const { UserService } = require('../services/UserService.prisma');
 const legalDocumentService = new LegalDocumentService();
 const prisma = new PrismaClient();
+const userService = new UserService();
 
 class LegalDocumentController {
   async verifyIdentity(req, res, next) {
@@ -108,6 +111,21 @@ class LegalDocumentController {
       if (notes !== undefined) updateData.notes = notes;
 
       const updated = await legalDocumentService.update(id, updateData);
+      // If admin approved an identity_document belonging to a user, delegate
+      // marking the user as Verified and sending the notification to UserService.
+      try {
+        if (
+          updateData.status === 'approved' &&
+          updated.type === 'identity_document' &&
+          updated.belongs_to === 'user' &&
+          updated.id_user
+        ) {
+          await userService.markUserVerifiedAndNotify(updated.id_user);
+        }
+      } catch (sideEffectErr) {
+        console.error('Error handling post-approval side effects for legal document via UserService:', sideEffectErr);
+      }
+
       res.json({ success: true, message: 'Documento actualizado por admin', data: updated });
     } catch (error) {
       next(error);

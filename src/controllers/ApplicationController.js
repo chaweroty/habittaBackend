@@ -243,10 +243,20 @@ class ApplicationController {
         message = 'Aplicación retirada por el solicitante';
       }
       
+      if (status === 'signed') {
+        // Cambiar el estado de la propiedad a 'rented' cuando la aplicación se firma
+        const propertyService = new (require('../services/PropertyService.prisma')).PropertyService();
+        await propertyService.setStatusRented(application.id_property);
+      } else if (status === 'terminated') {
+        // Cambiar el estado de la propiedad a 'published' cuando la aplicación se termina
+        const propertyService = new (require('../services/PropertyService.prisma')).PropertyService();
+        await propertyService.setStatusPublished(application.id_property);
+      }
+      
       // Llamar al servicio de reseñas para manejar la creación automática
       const reviewService = new (require('../services/ReviewService.prisma')).ReviewService();
       await reviewService.createReviewsForApplicationTransition(application, currentStatus, status, req.user.userId);
-      
+
       res.json({
         success: true,
         message,

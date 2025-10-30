@@ -10,7 +10,15 @@ class StatsService {
         where: { id_owner: ownerId }
       });
 
-      // 2. Solicitudes pendientes del owner
+      // 2. Total de propiedades rentadas del owner
+      const rentedProperties = await prisma.property.count({
+        where: {
+          id_owner: ownerId,
+          publication_status: 'rented'
+        }
+      });
+
+      // 3. Solicitudes pendientes del owner
       const pendingApplications = await prisma.application.count({
         where: {
           property: {
@@ -20,10 +28,10 @@ class StatsService {
         }
       });
 
-      // 3. Mantenimientos programados (hardcodeado por ahora)
+      // 4. Mantenimientos programados (hardcodeado por ahora)
       const scheduledMaintenances = 4;
 
-      // 4. Ingresos de los últimos 6 meses (hardcodeados)
+      // 5. Ingresos de los últimos 6 meses (hardcodeados)
       const monthlyIncome = [
         { month: 'Abril 2025', amount: 2500000 },
         { month: 'Mayo 2025', amount: 3200000 },
@@ -33,7 +41,7 @@ class StatsService {
         { month: 'Septiembre 2025', amount: 2900000 }
       ];
 
-      // 5. Últimas aplicaciones (con información del solicitante y propiedad)
+      // 6. Últimas aplicaciones (con información del solicitante y propiedad)
       const recentApplications = await prisma.application.findMany({
         where: {
           property: {
@@ -72,6 +80,7 @@ class StatsService {
 
       return {
         totalProperties,
+        rentedProperties,
         pendingApplications,
         scheduledMaintenances,
         monthlyIncome,

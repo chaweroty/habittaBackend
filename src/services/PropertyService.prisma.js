@@ -155,6 +155,20 @@ class PropertyService {
     });
   }
 
+  async setStatusRented(id) {
+    return prisma.property.update({
+      where: { id },
+      data: { publication_status: 'rented' }
+    });
+  }
+
+  async setStatusPublished(id) {
+    return prisma.property.update({
+      where: { id },
+      data: { publication_status: 'published' }
+    });
+  }
+
   // Puedes agregar otros métodos si es necesario
 }
 

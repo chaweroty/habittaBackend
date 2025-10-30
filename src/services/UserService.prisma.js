@@ -430,6 +430,36 @@ class UserService {
       throw error;
     }
   }
+
+  // Mark user as Verified and send notification (best-effort)
+  async markUserVerifiedAndNotify(userId) {
+    if (!userId) return null;
+    try {
+      // Check current status first to make this operation idempotent
+      const existing = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, status: true, email: true, name: true } });
+      if (!existing) return null;
+      if (existing.status === 'Verified') return existing;
+
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { status: 'Verified' },
+        select: { id: true, email: true, name: true, status: true }
+      });
+
+      if (updatedUser && updatedUser.email) {
+        try {
+          await sendOwnerVerifiedEmail(updatedUser.email, updatedUser.name || '');
+        } catch (emailErr) {
+          console.error('UserService.markUserVerifiedAndNotify - email error:', emailErr);
+        }
+      }
+
+      return updatedUser;
+    } catch (err) {
+      console.error('UserService.markUserVerifiedAndNotify error:', err);
+      return null;
+    }
+  }
 }
 
 module.exports = { UserService };
