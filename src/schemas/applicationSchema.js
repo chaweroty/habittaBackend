@@ -5,7 +5,7 @@ const createApplicationSchema = z.object({
   id_property: z.string().uuid('El ID de la propiedad debe ser un UUID válido'),
   status: z.enum(['pending', 'pre_approved', 'approved', 'rejected', 'withdrawn', 'documents_required', 'signed', 'terminated']).optional().default('pending'),
   description: z.string()
-    .max(500, 'La descripción no puede exceder los 500 caracteres')
+    .max(150, 'La descripción no puede exceder los 150 caracteres')
     .optional()
     .nullable()
 });
@@ -22,7 +22,7 @@ const updateApplicationSchema = z.object({
 // Esquema para actualización por parte del renter (solo descripción)
 const updateApplicationByRenterSchema = z.object({
   description: z.string()
-    .max(500, 'La descripción no puede exceder los 500 caracteres')
+    .max(150, 'La descripción no puede exceder los 150 caracteres')
     .optional()
     .nullable()
 });

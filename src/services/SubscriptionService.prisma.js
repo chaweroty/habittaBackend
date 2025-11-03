@@ -40,7 +40,7 @@ class SubscriptionService {
           id_plan: plan.id,
           start_date: new Date(),
           final_date: finalDate,
-          status: 'active',
+          status: plan.id === 1 ? 'active' : 'pending_payment',
           auto_renew: false,
           plan_price: planPrice
         }

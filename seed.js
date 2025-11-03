@@ -38,6 +38,74 @@ async function main() {
     users.push(user);
   }
 
+  // --- Crear planes de negocio si no existen (DEBE ejecutarse antes de crear propiedades) ---
+  const planCount = await prisma.plan.count();
+  if (planCount === 0) {
+    const plansData = [
+      {
+        name: 'Plan Básico',
+        price: 0,
+        duration_days: 15, // duración representada en días (15 días)
+        features: `Publicación de propiedades sin costo.\n
+Duración limitada: la publicación expira tras 15 días.\n
+Visibilidad estándar en búsquedas. Ideal para propietarios ocasionales.`
+      },
+      {
+        name: 'Plan Destacado',
+        price: 3, // $3/mes
+        duration_days: 30, // 0 = sin límite de tiempo mientras esté activo
+        features: `Publicación sin límite de tiempo (vigente hasta concretar arriendo).\n
+Propiedad destacada en búsquedas y recomendaciones.\n
+Estadísticas básicas (visitas y clicks).`
+      },
+      {
+        name: 'Plan Gestión',
+        price: 0.025, // 2.5% sobre la renta representado como decimal
+        duration_days: 30,
+        features: `Incluye todo lo del Plan Destacado.\n
+2.5%/renta mensual.\n
+Verificación de antecedentes de inquilinos.\n
+Gestión de pagos (recordatorios y cobros automáticos).\n
+Soporte técnico (atención remota).\n
+Opción de contratar un seguro adicional para imprevistos.`
+      },
+      {
+        name: 'Plan Integral',
+        price: 0.05, // 5% sobre la renta representado como decimal
+        duration_days: 30,
+        features: `Incluye todo lo del Plan Gestión.\n
+5%/renta mensual.\n
+Coordinación y verificación de mantenimientos.\n
+Atención presencial en caso de emergencias.\n
+Estadísticas avanzadas: comparación de precios, predicción de ingresos, reportes.\n
+Incluye el seguro para cubrir imprevistos.`
+      }
+    ];
+
+    for (const p of plansData) {
+      await prisma.plan.create({ data: p });
+    }
+  } else {
+    console.log(`🔁 Saltando creación de plans (ya existen ${planCount})`);
+  }
+
+  // Obtener plan gratuito preferido (id 1 si existe, si no buscar uno con price 0 o usar el primero disponible)
+  let freePlan = await prisma.plan.findUnique({ where: { id: 1 } });
+  if (!freePlan) {
+    freePlan = await prisma.plan.findFirst({ where: { price: 0 } });
+  }
+  if (!freePlan) {
+    // Si aún no hay plan gratuito, crear uno (no garantizamos id=1 si la tabla ya tenía datos)
+    freePlan = await prisma.plan.create({
+      data: {
+        name: 'Plan Básico',
+        price: 0,
+        duration_days: 15,
+        features: 'Plan básico automático creado por el seed'
+      }
+    });
+  }
+
   // 2. Crear propiedades
   const properties = [];
   const propertyTypes = ['house', 'apartament', 'store', 'office', 'werehouse'];
@@ -62,6 +130,24 @@ async function main() {
       }
     });
     properties.push(property);
+
+    // Crear una suscripción por defecto para cada propiedad usando el plan gratuito
+    try {
+      await prisma.subscription.create({
+        data: {
+          id_owner: owner.id,
+          id_property: property.id,
+          id_plan: freePlan.id,
+          start_date: new Date(),
+          final_date: null,
+          status: 'active',
+          auto_renew: false,
+          plan_price: freePlan.price
+        }
+      });
+    } catch (err) {
+      console.warn(`No se pudo crear subscription para property ${property.id}: ${err.message}`);
+    }
   }
 
   // 3. Crear imágenes de propiedades (1-3 por propiedad)
@@ -114,56 +200,7 @@ async function main() {
     });
   }
 
-// --- Crear planes de negocio si no existen ---
-  const planCount = await prisma.plan.count();
-  if (planCount === 0) {
-    const plansData = [
-      {
-        name: 'Plan Básico',
-        price: 0,
-        duration_days: 15, // duración representada en días (15 días)
-        features: `Publicación de propiedades sin costo.,
-Duración limitada: la publicación expira tras 15 días.,
-Visibilidad estándar en búsquedas. Ideal para propietarios ocasionales.`
-      },
-      {
-        name: 'Plan Destacado',
-        price: 3, // $3/mes
-        duration_days: 30, // 0 = sin límite de tiempo mientras esté activo
-        features: `Publicación sin límite de tiempo (vigente hasta concretar arriendo).,
-Propiedad destacada en búsquedas y recomendaciones.,
-Estadísticas básicas (visitas y clicks).`
-      },
-      {
-        name: 'Plan Gestión',
-        price: 0.025, // 2.5% sobre la renta representado como decimal
-        duration_days: 30,
-        features: `Incluye todo lo del Plan Destacado.,
-2.5%/renta mensual.,
-Verificación de antecedentes de inquilinos.,
-Gestión de pagos (recordatorios y cobros automáticos).,
-Soporte técnico (atención remota).,
-Opción de contratar un seguro adicional para imprevistos.`
-      },
-      {
-        name: 'Plan Integral',
-        price: 0.05, // 5% sobre la renta representado como decimal
-        duration_days: 30,
-        features: `Incluye todo lo del Plan Gestión.,
-5%/renta mensual.,
-Coordinación y verificación de mantenimientos.,
-Atención presencial en caso de emergencias.,
-Estadísticas avanzadas: comparación de precios, predicción de ingresos, reportes.,
-Incluye el seguro para cubrir imprevistos.`
-      }
-    ];
-
-    for (const p of plansData) {
-      await prisma.plan.create({ data: p });
-    }
-  } else {
-    console.log(`🔁 Saltando creación de plans (ya existen ${planCount})`);
-  }
+// (Bloque de creación de planes movido arriba para ejecutarse antes de properties)
 
   console.log('✅ Seed de datos de desarrollo completado!');
 }

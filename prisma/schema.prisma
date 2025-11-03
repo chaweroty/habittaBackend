@@ -60,7 +60,7 @@ model Property {
   rooms             Int
   bathrooms         Int
   area              Float
-  services          String
+  services          String @db.VarChar(2000)
   publication_status publicationStatus @default(published)
   publication_date  DateTime     @default(now())
   owner             User         @relation(fields: [id_owner], references: [id])
@@ -75,8 +75,7 @@ model Plan {
   name         String
   price        Float
   duration_days Int
-  features     String
-
+  features     String @db.VarChar(500)
   subscriptions Subscription[]
 }
 
@@ -146,8 +145,8 @@ model LegalDocument {
   id_application String?
   belongs_to    belongsTo
   type          String
-  description   String?
-  notes         String?
+  description   String? @db.VarChar(500)
+  notes         String? @db.VarChar(500)
   url_document  String
   upload_date   DateTime    @default(now())
   status        documentStatus
@@ -179,7 +178,7 @@ model Review {
   id_author      String
   id_receiver    String
   rating         Boolean?
-  comment        String?
+  comment        String? @db.VarChar(500)
   context_type   contextType
   weight         Decimal
   status         reviewStatus @default(pending)
@@ -213,7 +212,8 @@ enum RelatedType {
 
 enum PaymentMethod {
   card
-  transfer
+  bank_transfer
+  app_transfer
   cash
   other
 }
@@ -223,7 +223,7 @@ enum PaymentStatus {
   completed
   failed
   refunded
-  lated
+  overdue
 }
 
 model Payment {

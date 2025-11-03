@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 class PropertyService {
   async createProperty(propertyData) {
     // propertyData debe incluir: datos de la propiedad y un array de imágenes
-    const { images, ...propertyFields } = propertyData;
+    const { images, id_plan, ...propertyFields } = propertyData;
     // Asignar valores por defecto si no se envían
     if (!propertyFields.type) propertyFields.type = 'house';
     if (!propertyFields.publication_status) propertyFields.publication_status = 'published';
@@ -22,6 +22,18 @@ class PropertyService {
       throw error;
     }
 
+    // Validación adicional de negocio: si el plan solicitado es mayor a 2 (planes con cobro porcentual),
+    // la renta (price) debe ser mayor a 600000 para que sea rentable.
+    const requestedPlanId = id_plan ? Number(id_plan) : 1;
+    if (requestedPlanId > 2) {
+      const priceNum = Number(propertyFields.price);
+      if (!priceNum || priceNum <= 599900) {
+        const error = new Error('Para planes con cobro porcentual la renta debe ser mayor a $599.900 COP. Seleccione otro plan o aumente el precio de la renta.');
+        error.status = 400;
+        throw error;
+      }
+    }
+
     // Crear la propiedad
     const property = await prisma.property.create({
       data: {
@@ -37,7 +49,8 @@ class PropertyService {
     try {
       const { SubscriptionService } = require('./SubscriptionService.prisma');
       const subscriptionService = new SubscriptionService();
-      const planId = propertyFields.id_plan ? propertyFields.id_plan : 1;
+      // Usar el id_plan extraído del body (no persisterlo en Property)
+      const planId = id_plan ? id_plan : 1;
       // Pass property and planId; the service will fetch the plan if needed
       await subscriptionService.createAutomaticForProperty(property, planId);
     } catch (err) {
