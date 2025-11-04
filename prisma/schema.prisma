@@ -220,6 +220,7 @@ enum PaymentMethod {
 
 enum PaymentStatus {
   pending
+  processing
   completed
   failed
   refunded

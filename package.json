@@ -29,6 +29,7 @@
     "mysql2": "^3.14.3",
     "nodemailer": "^7.0.6",
     "prisma": "^6.15.0",
+    "stripe": "^19.2.0",
     "zod": "^4.1.4"
   },
   "devDependencies": {
