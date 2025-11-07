@@ -1,5 +1,16 @@
 const { ApplicationService } = require('../services/ApplicationService.prisma');
 const { PrismaClient } = require('../generated/prisma');
+const {
+  sendNewApplicationNotification,
+  sendDocumentsRequiredNotification,
+  sendPreApprovedNotification,
+  sendApplicationConfirmedByRenterNotification,
+  sendContractSignedNotification,
+  sendApplicationRejectedNotification,
+  sendApplicationWithdrawnNotification,
+  sendApplicationTerminatedNotification
+} = require('../services/pushNotificationService');
+const { is } = require('zod/locales');
 const applicationService = new ApplicationService();
 const prisma = new PrismaClient();
 
@@ -224,6 +235,84 @@ class ApplicationController {
       }
 
       const updatedApplication = await applicationService.updateApplication(id, updateData);
+      
+      // ========== ENVÍO DE NOTIFICACIONES SEGÚN EL ESTADO ==========
+      if (status && status !== currentStatus) {
+        try {
+          const propertyTitle = application.property.title || 'la propiedad';
+          const renterName = `${application.renter.name} ${application.renter.lastName}`;
+          const ownerName = application.property.owner ? 
+            `${application.property.owner.name} ${application.property.owner.lastName}` : 
+            'el propietario';
+          
+          // Determinar la contraparte según quién hizo la actualización
+          const isOwnerUpdating = isOwner || isAdmin;
+          const isRenterUpdating = isRenter && !isOwner;
+          
+          // Obtener pushToken de la contraparte
+          const counterpartyPushToken = isOwnerUpdating 
+            ? application.renter.pushToken 
+            : application.property.owner?.pushToken;
+
+          const typeNotification = isOwnerUpdating ? 'owner_notification' : 'user_notification';
+          
+          // Si no hay pushToken, no se puede enviar notificación
+          if (!counterpartyPushToken) {
+            console.warn(`⚠️ No se pudo enviar notificación: Usuario sin pushToken`);
+          } else {
+            // Enviar notificación según el nuevo estado
+            switch (status) {
+              case 'documents_required':
+                // Owner requiere documentos → Notificar a renter
+                await sendDocumentsRequiredNotification(counterpartyPushToken, propertyTitle);
+                break;
+                
+              case 'pre_approved':
+                // Owner pre-aprueba → Notificar a renter
+                await sendPreApprovedNotification(counterpartyPushToken, propertyTitle);
+                break;
+                
+              case 'approved':
+                // Renter confirma pre-aprobación → Notificar a owner
+                if (isRenterUpdating) {
+                  await sendApplicationConfirmedByRenterNotification(counterpartyPushToken, renterName, propertyTitle);
+                }
+                break;
+                
+              case 'signed':
+                // Contrato firmado → Notificar a la contraparte
+                const recipientName = isOwnerUpdating ? renterName : ownerName;
+                await sendContractSignedNotification(counterpartyPushToken, recipientName, propertyTitle, typeNotification);
+                break;
+                
+              case 'rejected':
+                // Owner rechaza → Notificar a renter (solo si no es el renter quien actualiza)
+                if (isOwnerUpdating) {
+                  await sendApplicationRejectedNotification(counterpartyPushToken, propertyTitle);
+                }
+                break;
+                
+              case 'withdrawn':
+                // Renter retira solicitud → Notificar a owner
+                if (isRenterUpdating) {
+                  await sendApplicationWithdrawnNotification(counterpartyPushToken, renterName, propertyTitle);
+                }
+                break;
+                
+              case 'terminated':
+                // Contrato finalizado → Notificar a la contraparte
+                await sendApplicationTerminatedNotification(counterpartyPushToken, propertyTitle, typeNotification);
+                break;
+                
+              default:
+                console.log(`ℹ️ No hay notificación configurada para el estado: ${status}`);
+            }
+          }
+        } catch (notificationError) {
+          // No fallar la operación si la notificación falla
+          console.error('❌ Error enviando notificación:', notificationError);
+        }
+      }
       
       // Mensaje personalizado según la acción
       let message = 'Aplicación actualizada exitosamente';
