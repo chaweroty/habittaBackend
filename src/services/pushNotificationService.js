@@ -186,6 +186,149 @@ const sendBroadcastNotification = async (userTokens, title, body, data = {}) => 
   }
 };
 
+// ==================== NOTIFICACIONES DE ESTADOS DE APPLICATION ====================
+
+/**
+ * Envía notificación cuando se requieren documentos adicionales (a renter)
+ * @param {string} renterPushToken - Token de push del solicitante
+ * @param {string} propertyTitle - Título de la propiedad
+ */
+const sendDocumentsRequiredNotification = async (renterPushToken, propertyTitle) => {
+  try {
+    await sendPushNotification(
+      renterPushToken,
+      'Documentos requeridos 📄',
+      `Se necesitan documentos adicionales para tu solicitud de "${propertyTitle}".`,
+      {
+        type: 'user_notification',
+        action: 'view_applications',
+        propertyTitle
+      }
+    );
+    console.log(`📱 Notificación de documentos requeridos enviada al solicitante`);
+  } catch (error) {
+    console.error('❌ Error enviando notificación de documentos requeridos:', error);
+  }
+};
+
+/**
+ * Envía notificación cuando una aplicación es pre-aprobada (a renter)
+ * @param {string} renterPushToken - Token de push del solicitante
+ * @param {string} propertyTitle - Título de la propiedad
+ */
+const sendPreApprovedNotification = async (renterPushToken, propertyTitle) => {
+  try {
+    await sendPushNotification(
+      renterPushToken,
+      '¡Pre-aprobación! 🎯',
+      `Tu solicitud para "${propertyTitle}" ha sido pre-aprobada. Confirma para continuar.`,
+      {
+        type: 'user_notification',
+        action: 'view_applications',
+        propertyTitle
+      }
+    );
+    console.log(`📱 Notificación de pre-aprobación enviada al solicitante`);
+  } catch (error) {
+    console.error('❌ Error enviando notificación de pre-aprobación:', error);
+  }
+};
+
+/**
+ * Envía notificación cuando el renter confirma y la aplicación pasa a 'approved' (a owner)
+ * @param {string} ownerPushToken - Token de push del propietario
+ * @param {string} renterName - Nombre del solicitante
+ * @param {string} propertyTitle - Título de la propiedad
+ */
+const sendApplicationConfirmedByRenterNotification = async (ownerPushToken, renterName, propertyTitle) => {
+  try {
+    await sendPushNotification(
+      ownerPushToken,
+      'Solicitud confirmada ✅',
+      `${renterName} ha confirmado su interés en "${propertyTitle}". Puedes proceder con el contrato.`,
+      {
+        type: 'owner_notification',
+        action: 'view_applications',
+        propertyTitle
+      }
+    );
+    console.log(`📱 Notificación de confirmación enviada al propietario`);
+  } catch (error) {
+    console.error('❌ Error enviando notificación de confirmación:', error);
+  }
+};
+
+/**
+ * Envía notificación cuando el contrato es firmado (a la contraparte)
+ * @param {string} pushToken - Token de push del destinatario
+ * @param {string} recipientName - Nombre del destinatario
+ * @param {string} propertyTitle - Título de la propiedad
+ */
+const sendContractSignedNotification = async (pushToken, recipientName, propertyTitle, typeNotification) => {
+  try {
+    await sendPushNotification(
+      pushToken,
+      'Contrato firmado 📑',
+      `${recipientName}, el contrato para "${propertyTitle}" ha sido firmado exitosamente.`,
+      {
+        type: typeNotification,
+        action: 'view_applications',
+        propertyTitle
+      }
+    );
+    console.log(`📱 Notificación de contrato firmado enviada`);
+  } catch (error) {
+    console.error('❌ Error enviando notificación de contrato firmado:', error);
+  }
+};
+
+/**
+ * Envía notificación cuando el renter retira su solicitud (a owner)
+ * @param {string} ownerPushToken - Token de push del propietario
+ * @param {string} renterName - Nombre del solicitante
+ * @param {string} propertyTitle - Título de la propiedad
+ */
+const sendApplicationWithdrawnNotification = async (ownerPushToken, renterName, propertyTitle) => {
+  try {
+    await sendPushNotification(
+      ownerPushToken,
+      'Solicitud retirada 🚫',
+      `${renterName} ha retirado su solicitud para "${propertyTitle}".`,
+      {
+        type: 'owner_notification',
+        action: 'view_applications',
+        propertyTitle
+      }
+    );
+    console.log(`📱 Notificación de retiro enviada al propietario`);
+  } catch (error) {
+    console.error('❌ Error enviando notificación de retiro:', error);
+  }
+};
+
+/**
+ * Envía notificación cuando el contrato/aplicación termina (a la contraparte)
+ * @param {string} pushToken - Token de push del destinatario
+ * @param {string} propertyTitle - Título de la propiedad
+ */
+const sendApplicationTerminatedNotification = async (pushToken, propertyTitle, typeNotification) => {
+  try {
+    await sendPushNotification(
+      pushToken,
+      'Contrato finalizado 🏁',
+      `El contrato para "${propertyTitle}" ha finalizado.`,
+      {
+        type: typeNotification,
+        action: 'view_applications',
+        propertyTitle
+      }
+    );
+    console.log(`📱 Notificación de finalización enviada`);
+  } catch (error) {
+    console.error('❌ Error enviando notificación de finalización:', error);
+  }
+};
+
 // Exportar todas las funciones usando CommonJS
 module.exports = {
   sendWelcomeNotification,
@@ -195,6 +338,13 @@ module.exports = {
   sendApplicationApprovedNotification,
   sendApplicationRejectedNotification,
   sendBroadcastNotification,
+  // Nuevas notificaciones de estados de Application
+  sendDocumentsRequiredNotification,
+  sendPreApprovedNotification,
+  sendApplicationConfirmedByRenterNotification,
+  sendContractSignedNotification,
+  sendApplicationWithdrawnNotification,
+  sendApplicationTerminatedNotification,
   // También exportar como PushNotificationService para compatibilidad
   PushNotificationService: {
     sendWelcomeNotification,
@@ -203,6 +353,12 @@ module.exports = {
     sendNewApplicationNotification,
     sendApplicationApprovedNotification,
     sendApplicationRejectedNotification,
-    sendBroadcastNotification
+    sendBroadcastNotification,
+    sendDocumentsRequiredNotification,
+    sendPreApprovedNotification,
+    sendApplicationConfirmedByRenterNotification,
+    sendContractSignedNotification,
+    sendApplicationWithdrawnNotification,
+    sendApplicationTerminatedNotification
   }
 };

@@ -130,6 +130,7 @@ class ApplicationService {
   }
 
   async getAllApplications() {
+    // Obtener aplicaciones junto con renter y property (sin cálculos adicionales)
     return prisma.application.findMany({
       include: {
         renter: {
@@ -203,7 +204,8 @@ class ApplicationService {
   }
 
   async getApplicationsByOwner(ownerId) {
-    return prisma.application.findMany({
+    // Obtener aplicaciones del owner
+    const applications = await prisma.application.findMany({
       where: { 
         property: { 
           id_owner: ownerId 
@@ -228,6 +230,48 @@ class ApplicationService {
       },
       orderBy: { application_date: 'desc' }
     });
+
+    // Añadir ratingAverage al renter usando ReviewService.getReviewSummary
+    const { ReviewService } = require('./ReviewService.prisma');
+    const reviewService = new ReviewService();
+
+    const renterIds = Array.from(new Set(applications.map(a => a.renter?.id).filter(Boolean)));
+    if (renterIds.length === 0) return applications;
+
+    const summaries = await Promise.all(renterIds.map(id => reviewService.getReviewSummary(id)));
+    const summaryMap = {};
+    renterIds.forEach((id, idx) => {
+      summaryMap[id] = summaries[idx] || { positivePercentage: 0 };
+    });
+
+    for (const app of applications) {
+      const rid = app.renter?.id;
+      const s = summaryMap[rid];
+      const percent = s && typeof s.positivePercentage === 'number' ? s.positivePercentage : 0;
+      app.renter = { ...app.renter, ratingAverage: percent };
+    }
+
+    // Log concise summary for owner view
+    try {
+      const logSummary = {
+        timestamp: new Date().toISOString(),
+        ownerId,
+        totalApplications: applications.length,
+        items: applications.map(a => ({
+          applicationId: a.id,
+          status: a.status,
+          propertyId: a.property?.id,
+          renterId: a.renter?.id,
+          renterName: a.renter?.name,
+          ratingAverage: a.renter?.ratingAverage
+        }))
+      };
+      console.log('getApplicationsByOwner summary:', JSON.stringify(logSummary));
+    } catch (logErr) {
+      console.error('Error logging getApplicationsByOwner summary:', logErr);
+    }
+
+    return applications;
   }
 
   async updateApplication(id, applicationData) {

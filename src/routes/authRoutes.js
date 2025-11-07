@@ -1,7 +1,9 @@
 const { Router } = require('express');
 const { authenticate } = require('../middleware/auth');
-const { validateBody } = require('../middleware/validation');
+const { validateBody, validateParams } = require('../middleware/validation');
 const { createUserSchema, loginSchema, updatePushTokenSchema } = require('../schemas/userSchema');
+const { resendVerificationSchema, userIdSchema } = require('../schemas/userSchema');
+const { confirmVerificationSchema } = require('../schemas/userSchema');
 const { UserController } = require('../controllers/UserController');
 
 const userController = new UserController();
@@ -18,6 +20,19 @@ router.post('/register',
 router.post('/login',
   validateBody(loginSchema),
   userController.login
+);
+
+// POST /auth/resend-confirmation/:id - Reenviar código de verificación por user id
+router.post('/resend-confirmation/:id',
+  validateParams(userIdSchema),
+  userController.resendConfirmation
+);
+
+// POST /auth/confirm/:id - Confirmar código de verificación
+router.post('/confirm/:id',
+  validateParams(userIdSchema),
+  validateBody(confirmVerificationSchema),
+  userController.confirmVerification
 );
 
 // GET /auth/me - Obtener información del usuario actual

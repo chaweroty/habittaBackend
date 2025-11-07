@@ -35,6 +35,17 @@ model User {
   subscriptions    Subscription[]
   applications     Application[]
   legalDocuments   LegalDocument[]
+  ownerContracts    Contract[]    @relation("OwnerRelation")
+  renterContracts   Contract[]    @relation("RenterRelation")
+  paymentsMade    Payment[] @relation("PayerRelation")
+  paymentsReceived Payment[] @relation("ReceiverRelation")
+}
+
+enum publicationStatus {
+  published
+  rented
+  disabled
+  expired
 }
 
 model Property {
@@ -49,8 +60,8 @@ model Property {
   rooms             Int
   bathrooms         Int
   area              Float
-  services          String
-  publication_status String
+  services          String @db.VarChar(2000)
+  publication_status publicationStatus @default(published)
   publication_date  DateTime     @default(now())
   owner             User         @relation(fields: [id_owner], references: [id])
   subscription      Subscription?
@@ -59,15 +70,39 @@ model Property {
   legalDocuments    LegalDocument[]
 }
 
+model Plan {
+  id      Int      @id @default(autoincrement())
+  name         String
+  price        Float
+  duration_days Int
+  features     String @db.VarChar(500)
+  subscriptions Subscription[]
+}
+
+enum suscriptionStatus {
+  active
+  inactive
+  cancelled
+  expired
+  pending_payment
+}
+
 model Subscription {
-  id_subscription String   @id @default(uuid())
+  id String   @id @default(uuid())
   id_owner       String
   id_property    String   @unique
-  type           String
+  id_plan        Int
   start_date     DateTime @default(now())
   final_date     DateTime?
+  status         suscriptionStatus @default(pending_payment)
+  auto_renew     Boolean  @default(false)
+  plan_price     Float
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
   owner          User     @relation(fields: [id_owner], references: [id])
   property       Property @relation(fields: [id_property], references: [id])
+  plan           Plan     @relation(fields: [id_plan], references: [id])
 }
 
 model ImageProperty {
@@ -87,19 +122,38 @@ model Application {
   renter           User     @relation(fields: [id_renter], references: [id])
   property         Property @relation(fields: [id_property], references: [id])
   legalDocuments   LegalDocument[]
+  contracts        Contract[]
+}
+
+enum belongsTo {
+  user
+  property
+  application
+}
+
+enum documentStatus {
+  pending
+  approved
+  rejected
+  expired
 }
 
 model LegalDocument {
   id            String   @id @default(uuid())
-  id_user       String
+  id_user       String?
   id_property   String?
   id_application String?
+  belongs_to    belongsTo
   type          String
+  description   String? @db.VarChar(500)
+  notes         String? @db.VarChar(500)
+  url_document  String
   upload_date   DateTime    @default(now())
-  status        String
-  user          User        @relation(fields: [id_user], references: [id])
+  status        documentStatus
+  user          User?        @relation(fields: [id_user], references: [id])
   property      Property?   @relation(fields: [id_property], references: [id])
   application   Application? @relation(fields: [id_application], references: [id])
+  contracts     Contract[]
 }
 
 enum contextType {
@@ -123,10 +177,74 @@ model Review {
   id_application String
   id_author      String
   id_receiver    String
-  rating         Boolean
-  comment        String?
+  rating         Boolean?
+  comment        String? @db.VarChar(500)
   context_type   contextType
   weight         Decimal
   status         reviewStatus @default(pending)
   create_date    DateTime    @default(now())
+}
+
+model Contract {
+  id_contract       String      @id @default(uuid())
+  id_application    String
+  id_owner          String
+  id_document       String?
+  id_renter         String
+  start_date        DateTime
+  end_date          DateTime?
+  rent_amount       Float
+  payment_frequency String
+  status            String
+
+  application       Application @relation(fields: [id_application], references: [id])
+  owner             User        @relation(fields: [id_owner], references: [id], name: "OwnerRelation")
+  document          LegalDocument? @relation(fields: [id_document], references: [id])
+  renter            User        @relation(fields: [id_renter], references: [id], name: "RenterRelation")
+}
+
+enum RelatedType {
+  rent
+  subscription
+  maintenance
+  other
+}
+
+enum PaymentMethod {
+  card
+  bank_transfer
+  app_transfer
+  cash
+  other
+}
+
+enum PaymentStatus {
+  pending
+  processing
+  completed
+  failed
+  refunded
+  overdue
+}
+
+model Payment {
+  id_pay         String      @id @default(uuid())
+  id_payer       String
+  id_receiver    String?
+  related_type   RelatedType
+  id_related     String
+  concept        String
+  description    String?
+  amount         Float
+  currency       String      @default("COP")
+  method         PaymentMethod?
+  payment_date   DateTime?
+  due_date       DateTime?
+  reference_code String?     @unique
+  notes          String?
+  created_at     DateTime    @default(now())
+  status         PaymentStatus @default(pending)
+
+  payer          User        @relation(fields: [id_payer], references: [id], name: "PayerRelation")
+  receiver       User?       @relation(fields: [id_receiver], references: [id], name: "ReceiverRelation")
 }
