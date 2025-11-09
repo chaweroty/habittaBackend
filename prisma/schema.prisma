@@ -39,6 +39,8 @@ model User {
   renterContracts   Contract[]    @relation("RenterRelation")
   paymentsMade    Payment[] @relation("PayerRelation")
   paymentsReceived Payment[] @relation("ReceiverRelation")
+  maintenancesAsOwner Maintenance[] @relation("OwnerMaintenanceRelation")
+  maintenancesAsUser Maintenance[] @relation("UserMaintenanceRelation")
 }
 
 enum publicationStatus {
@@ -68,6 +70,7 @@ model Property {
   images            ImageProperty[]
   applications      Application[]
   legalDocuments    LegalDocument[]
+  maintenances      Maintenance[]
 }
 
 model Plan {
@@ -247,4 +250,48 @@ model Payment {
 
   payer          User        @relation(fields: [id_payer], references: [id], name: "PayerRelation")
   receiver       User?       @relation(fields: [id_receiver], references: [id], name: "ReceiverRelation")
+  maintenances   Maintenance[]
+}
+
+enum MaintenanceStatus {
+  pending
+  accepted
+  confirmed
+  rejected
+  completed
+}
+
+enum MaintenanceCreatedBy {
+  owner
+  user
+}
+
+enum MaintenanceResponsibility {
+  owner
+  user
+}
+
+model Maintenance {
+  id_maintenance   String                    @id @default(uuid())
+  id_property      String
+  id_owner         String
+  id_user          String
+  title            String
+  description      String?                   @db.VarChar(1000)
+  status           MaintenanceStatus         @default(pending)
+  responsibility   MaintenanceResponsibility @default(owner)
+  cost_estimate    Float?
+  scheduled_date   DateTime?
+  confirmed_date   DateTime?
+  completed_date   DateTime?
+  attachments      Json?
+  created_by       MaintenanceCreatedBy
+  id_payment       String?
+  created_at       DateTime                  @default(now())
+  updated_at       DateTime                  @updatedAt
+
+  property         Property @relation(fields: [id_property], references: [id])
+  owner            User     @relation(fields: [id_owner], references: [id], name: "OwnerMaintenanceRelation")
+  user             User     @relation(fields: [id_user], references: [id], name: "UserMaintenanceRelation")
+  payment          Payment? @relation(fields: [id_payment], references: [id_pay])
 }
