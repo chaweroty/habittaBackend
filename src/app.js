@@ -30,7 +30,15 @@ class App {
       credentials: true
     }));
 
-    // Body parsers
+    // Stripe webhook endpoint ANTES del body parser (necesita raw body)
+    // Debe ir antes de express.json() para recibir el Buffer sin parsear
+    const PaymentController = require('./controllers/PaymentController');
+    this.app.post('/api/payments/webhook', 
+      express.raw({ type: 'application/json' }), 
+      PaymentController.handleWebhook
+    );
+
+    // Body parsers (aplican a todas las demás rutas)
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

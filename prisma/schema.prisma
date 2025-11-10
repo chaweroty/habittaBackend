@@ -18,6 +18,7 @@ enum UserStatus {
   Verified
   Unverified
   Pending
+  Deleted
 }
 
 model User {
@@ -48,6 +49,7 @@ enum publicationStatus {
   rented
   disabled
   expired
+  deleted
 }
 
 model Property {
@@ -115,11 +117,22 @@ model ImageProperty {
   property   Property @relation(fields: [id_property], references: [id])
 }
 
+enum applicationStatus {
+  pending
+  pre_approved
+  approved
+  rejected
+  withdrawn
+  documents_required
+  signed
+  terminated
+}
+
 model Application {
   id               String   @id @default(uuid())
   id_renter        String
   id_property      String
-  status           String
+  status           applicationStatus @default(pending)
   description      String?
   application_date DateTime @default(now())
   renter           User     @relation(fields: [id_renter], references: [id])
@@ -139,6 +152,7 @@ enum documentStatus {
   approved
   rejected
   expired
+  deleted
 }
 
 model LegalDocument {
@@ -228,6 +242,7 @@ enum PaymentStatus {
   failed
   refunded
   overdue
+  cancelled
 }
 
 model Payment {

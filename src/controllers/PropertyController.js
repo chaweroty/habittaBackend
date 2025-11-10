@@ -85,13 +85,41 @@ class PropertyController {
   // PUT /properties/:id
   async updateProperty(req, res, next) {
     try {
+      const id = req.params.id;
+      
+      // Obtener la propiedad actual para verificar su estado
+      const currentProperty = await this.propertyService.getProperty(id);
+      if (!currentProperty) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Propiedad no encontrada' 
+        });
+      }
+
+      // Validar que solo se pueda editar si está en estado 'published' o 'disabled'
+      const allowedStatuses = ['published', 'disabled'];
+      if (!allowedStatuses.includes(currentProperty.publication_status)) {
+        return res.status(403).json({
+          success: false,
+          message: `No se puede editar la propiedad. Solo se permiten ediciones cuando el estado es 'published' o 'disabled'. Estado actual: '${currentProperty.publication_status}'`
+        });
+      }
+
+      // Validar el body con Zod
       const parseResult = propertySchema.safeParse(req.body);
       if (!parseResult.success) {
-        return res.status(400).json({ success: false, errors: parseResult.error.errors });
+        return res.status(400).json({ 
+          success: false, 
+          errors: parseResult.error.errors 
+        });
       }
-      const id = req.params.id;
+
       const updatedProperty = await this.propertyService.updateProperty(id, parseResult.data);
-      res.json({ success: true, message: 'Propiedad actualizada exitosamente', data: updatedProperty });
+      res.json({ 
+        success: true, 
+        message: 'Propiedad actualizada exitosamente', 
+        data: updatedProperty 
+      });
     } catch (error) {
       next(error);
     }
@@ -101,11 +129,41 @@ class PropertyController {
   async deleteProperty(req, res, next) {
     try {
       const id = req.params.id;
-      const deleted = await this.propertyService.deleteProperty(id);
-      if (!deleted) {
-        return res.status(404).json({ success: false, message: 'Propiedad no encontrada' });
+      
+      // Obtener la propiedad actual para verificar su estado
+      const currentProperty = await this.propertyService.getProperty(id);
+      if (!currentProperty) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Propiedad no encontrada' 
+        });
       }
-      res.json({ success: true, message: 'Propiedad eliminada exitosamente' });
+
+      // Verificar que no esté ya eliminada
+      if (currentProperty.publication_status === 'deleted') {
+        return res.status(400).json({
+          success: false,
+          message: 'La propiedad ya ha sido eliminada'
+        });
+      }
+
+      // Validar que solo se pueda eliminar si está en estado 'published' o 'disabled'
+      const allowedStatuses = ['published', 'disabled'];
+      if (!allowedStatuses.includes(currentProperty.publication_status)) {
+        return res.status(403).json({
+          success: false,
+          message: `No se puede eliminar una propiedad que esta rentada o esxpirada.`
+        });
+      }
+
+      // Soft delete: cambiar el estado a 'deleted'
+      const deletedProperty = await this.propertyService.deleteProperty(id);
+      
+      res.json({ 
+        success: true, 
+        message: 'Propiedad eliminada exitosamente',
+        data: deletedProperty
+      });
     } catch (error) {
       next(error);
     }

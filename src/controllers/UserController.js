@@ -106,18 +106,14 @@ class UserController {
   async deleteUser(req, res, next) {
     try {
       const id = req.params.id; // UUID string
-      const deleted = await this.userService.deleteUser(id);
       
-      if (!deleted) {
-        return res.status(404).json({
-          success: false,
-          message: 'Usuario no encontrado'
-        });
-      }
+      // El servicio ahora hace soft delete y retorna el usuario actualizado
+      const deletedUser = await this.userService.deleteUser(id);
 
       res.json({
         success: true,
-        message: 'Usuario eliminado exitosamente'
+        message: 'Usuario eliminado exitosamente',
+        data: deletedUser
       });
     } catch (error) {
       next(error);

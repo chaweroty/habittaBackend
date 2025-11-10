@@ -170,6 +170,8 @@ class PaymentService {
       const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
       let event;
 
+      console.log('Processing Stripe webhook event');
+
       if (!webhookSecret) {
         // If webhook secret is not configured, try to parse without verification (not recommended)
         event = JSON.parse(rawBody.toString());
@@ -230,6 +232,8 @@ class PaymentService {
         where: { reference_code: intent.id },
         data: updateData
       });
+
+      console.log(`Updated ${updated.count} payment(s) for PaymentIntent ${intent.id} to status ${mapping.status}`);
 
       return { handled: true, updatedCount: updated.count, type };
     } catch (err) {

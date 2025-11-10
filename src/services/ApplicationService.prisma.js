@@ -102,7 +102,7 @@ class ApplicationService {
       where: { id },
       include: {
         renter: {
-          select: { id: true, name: true, email: true, phone: true }
+          select: { id: true, name: true, email: true, phone: true, pushToken: true }
         },
         property: {
           select: { 

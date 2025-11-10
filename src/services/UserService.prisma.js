@@ -14,6 +14,9 @@ const prisma = new PrismaClient();
 class UserService {
   async getAllUsers() {
     return prisma.user.findMany({
+      where: {
+        status: { not: 'Deleted' }
+      },
       orderBy: { creation_date: 'desc' },
       select: {
         id: true,
@@ -45,8 +48,11 @@ class UserService {
   }
 
   async getUserByEmail(email) {
-    return prisma.user.findUnique({
-      where: { email }
+    return prisma.user.findFirst({
+      where: { 
+        email,
+        status: { not: 'Deleted' }
+      }
     });
   }
 
@@ -54,6 +60,7 @@ class UserService {
     const user = await prisma.user.findFirst({
       where: {
         email,
+        status: { not: 'Deleted' },
         ...(excludeId && { NOT: { id: excludeId } })
       }
     });
@@ -61,10 +68,39 @@ class UserService {
   }
 
   async createUser(userData) {
-    const existingUser = await this.emailExists(userData.email);
-    if (existingUser) {
+    // Verificar si existe un usuario activo con ese email
+    const existingActiveUser = await this.emailExists(userData.email);
+    if (existingActiveUser) {
       throw new Error('El email ya está registrado');
     }
+
+    // Verificar si existe un usuario eliminado con ese email
+    const deletedUser = await prisma.user.findFirst({
+      where: {
+        email: userData.email,
+        status: 'Deleted'
+      }
+    });
+
+    // Si existe un usuario eliminado, actualizar sus datos en lugar de crear uno nuevo
+    if (deletedUser) {
+      const hashedPassword = await HashUtils.hashPassword(userData.password);
+      const updatedUser = await prisma.user.update({
+        where: { id: deletedUser.id },
+        data: {
+          name: userData.name,
+          password: hashedPassword,
+          phone: userData.phone,
+          role: userData.role || 'user',
+          status: userData.status || 'Unverified',
+          verificationCode: userData.verificationCode || null,
+          creation_date: new Date() // Actualizar fecha de creación
+        }
+      });
+      return updatedUser;
+    }
+
+    // Si no existe usuario eliminado, crear uno nuevo
     const hashedPassword = await HashUtils.hashPassword(userData.password);
     const createdUser = await prisma.user.create({
       data: {
@@ -77,7 +113,6 @@ class UserService {
         verificationCode: userData.verificationCode || null
       }
     });
-    // Ya no se crea suscripción automáticamente
     return createdUser;
   }
 
@@ -115,50 +150,118 @@ class UserService {
     if (!existingUser) {
       throw new Error('Usuario no encontrado');
     }
+    
+    // Verificar que no esté ya eliminado
+    if (existingUser.status === 'Deleted') {
+      throw new Error('El usuario ya ha sido eliminado');
+    }
+
     // Usar transacción para garantizar consistencia
-    await prisma.$transaction(async (tx) => {
-      // 1. Eliminar documentos legales del usuario
-      await tx.legalDocument.deleteMany({ where: { id_user: id } });
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Obtener todas las propiedades del usuario
+      const userProperties = await tx.property.findMany({
+        where: { id_owner: id },
+        select: { id: true }
+      });
 
-      // 2. Eliminar aplicaciones del usuario (como arrendatario)
-      await tx.application.deleteMany({ where: { id_renter: id } });
+      const propertyIds = userProperties.map(p => p.id);
 
-      // 3. Obtener propiedades del usuario para eliminar sus dependencias
-      const userProperties = await tx.property.findMany({ where: { id_owner: id } });
+      // 2. Rechazar todas las aplicaciones activas de sus propiedades
+      if (propertyIds.length > 0) {
+        await tx.application.updateMany({
+          where: {
+            id_property: {
+              in: propertyIds
+            },
+            status: {
+              notIn: ['rejected', 'withdrawn', 'terminated']
+            }
+          },
+          data: {
+            status: 'rejected'
+          }
+        });
 
-      for (const property of userProperties) {
-        // 3.1. Eliminar documentos legales de las propiedades
-        await tx.legalDocument.deleteMany({ where: { id_property: property.id } });
+        // 3. Obtener todas las suscripciones de las propiedades
+        const subscriptions = await tx.subscription.findMany({
+          where: {
+            id_property: {
+              in: propertyIds
+            }
+          },
+          select: { id: true }
+        });
 
-        // 3.2. Eliminar aplicaciones de las propiedades
-        const propertyApplications = await tx.application.findMany({ where: { id_property: property.id } });
-        for (const application of propertyApplications) {
-          await tx.legalDocument.deleteMany({ where: { id_application: application.id } });
+        const subscriptionIds = subscriptions.map(s => s.id);
+
+        // 4. Cancelar todas las suscripciones
+        if (subscriptionIds.length > 0) {
+          await tx.subscription.updateMany({
+            where: {
+              id: {
+                in: subscriptionIds
+              }
+            },
+            data: {
+              status: 'cancelled'
+            }
+          });
+
+          // 5. Cancelar pagos pendientes/procesando/atrasados de esas suscripciones
+          await tx.payment.updateMany({
+            where: {
+              related_type: 'subscription',
+              id_related: {
+                in: subscriptionIds
+              },
+              status: {
+                in: ['pending', 'processing', 'overdue']
+              }
+            },
+            data: {
+              status: 'cancelled'
+            }
+          });
         }
-        await tx.application.deleteMany({ where: { id_property: property.id } });
-
-        // 3.3. Eliminar imágenes de las propiedades
-        await tx.imageProperty.deleteMany({ where: { id_property: property.id } });
-
-        // 3.4. Eliminar suscripciones de las propiedades
-        await tx.subscription.deleteMany({ where: { id_property: property.id } });
       }
 
-      // 4. Eliminar propiedades del usuario
-      await tx.property.deleteMany({ where: { id_owner: id } });
+      // 6. Cambiar status de todas las propiedades del usuario a 'deleted'
+      await tx.property.updateMany({
+        where: { id_owner: id },
+        data: { publication_status: 'deleted' }
+      });
 
-      // 5. Eliminar suscripciones donde el usuario es propietario (por si quedaron algunas)
-      await tx.subscription.deleteMany({ where: { id_owner: id } });
+      // 7. Soft delete del usuario: cambiar status a 'Deleted'
+      const deletedUser = await tx.user.update({
+        where: { id },
+        data: { 
+          status: 'Deleted',
+          pushToken: '' // Limpiar push token al eliminar
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+          status: true,
+          creation_date: true
+        }
+      });
 
-      // 6. Finalmente eliminar el usuario
-      await tx.user.delete({ where: { id } });
+      return deletedUser;
     });
-    return true;
+
+    return result;
   }
 
   async login(loginData) {
-    const user = await this.getUserByEmail(loginData.email);
-    if (!user) {
+    const user = await prisma.user.findFirst({
+      where: { email: loginData.email }
+    });
+    
+    // Si no existe el usuario o está eliminado, retornar el mismo error
+    if (!user || user.status === 'Deleted') {
       throw new Error('Credenciales inválidas');
     }
 
@@ -243,7 +346,7 @@ class UserService {
   }
 
   async resendVerificationCode(email) {
-    // Buscar usuario por email
+    // Buscar usuario por email (excluyendo eliminados)
     const user = await this.getUserByEmail(email);
     if (!user) {
       throw new Error('Usuario no encontrado');
@@ -255,7 +358,7 @@ class UserService {
     const newCode = generateVerificationCode();
 
     const updatedUser = await prisma.user.update({
-      where: { email },
+      where: { id: user.id },
       data: { verificationCode: newCode },
       select: {
         id: true,
