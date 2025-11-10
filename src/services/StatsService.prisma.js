@@ -24,7 +24,7 @@ class StatsService {
           property: {
             id_owner: ownerId
           },
-          status: 'Pending'
+          status: 'pending'
         }
       });
 
