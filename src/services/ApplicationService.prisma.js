@@ -286,13 +286,19 @@ class ApplicationService {
       throw error;
     }
 
+    // Preparar datos de actualización (solo campos definidos)
+    const updateData = {};
+    if (applicationData.status !== undefined) updateData.status = applicationData.status;
+    if (applicationData.description !== undefined) updateData.description = applicationData.description;
+    if (applicationData.start_date !== undefined) updateData.start_date = applicationData.start_date;
+    if (applicationData.end_date !== undefined) updateData.end_date = applicationData.end_date;
+    if (applicationData.rentAmount !== undefined) updateData.rentAmount = applicationData.rentAmount;
+    if (applicationData.paymentFrequency !== undefined) updateData.paymentFrequency = applicationData.paymentFrequency;
+
     // Actualizar la aplicación
     const updatedApplication = await prisma.application.update({
       where: { id },
-      data: {
-        status: applicationData.status,
-        description: applicationData.description
-      },
+      data: updateData,
       include: {
         renter: {
           select: { id: true, name: true, email: true, phone: true }

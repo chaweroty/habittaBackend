@@ -44,6 +44,40 @@ class PaymentService {
   }
 
   /**
+   * Create a general payment record
+   * Returns the created payment.
+   */
+  async createPayment(paymentData) {
+    try {
+      const payment = await prisma.payment.create({
+        data: {
+          id_payer: paymentData.id_payer,
+          id_receiver: paymentData.id_receiver || null,
+          related_type: paymentData.related_type,
+          id_related: paymentData.id_related,
+          concept: paymentData.concept,
+          description: paymentData.description || null,
+          amount: Number(paymentData.amount),
+          currency: paymentData.currency || 'COP',
+          method: paymentData.method || null,
+          payment_date: paymentData.payment_date || null,
+          due_date: paymentData.due_date || null,
+          reference_code: paymentData.reference_code || `pay_${Date.now()}_${Math.floor(Math.random()*10000)}`,
+          notes: paymentData.notes || null,
+          status: paymentData.status || 'pending'
+        }
+      });
+
+      return payment;
+    } catch (err) {
+      console.error('PaymentService.createPayment error:', err);
+      throw err;
+    }
+  }
+
+  
+
+  /**
    * Obtener pagos relacionados a un usuario (como pagador o receptor)
    * Devuelve los registros ordenados por created_at desc
    */
@@ -136,7 +170,7 @@ class PaymentService {
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount: paymentRecord.amount * 100,
-        currency: 'USD',
+        currency: paymentRecord.currency,
         automatic_payment_methods: { enabled: true },
         metadata: { id_related: paymentRecord.id_related, related_type: paymentRecord.related_type, concept: paymentRecord.concept },
       });

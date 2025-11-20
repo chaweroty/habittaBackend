@@ -42,6 +42,7 @@ model User {
   paymentsReceived Payment[] @relation("ReceiverRelation")
   maintenancesAsOwner Maintenance[] @relation("OwnerMaintenanceRelation")
   maintenancesAsUser Maintenance[] @relation("UserMaintenanceRelation")
+  notificationTokens NotificationToken[]
 }
 
 enum publicationStatus {
@@ -128,6 +129,13 @@ enum applicationStatus {
   terminated
 }
 
+enum paymentFrequency {
+  monthly
+  quarterly
+  biannual
+  annual
+}
+
 model Application {
   id               String   @id @default(uuid())
   id_renter        String
@@ -137,6 +145,10 @@ model Application {
   application_date DateTime @default(now())
   renter           User     @relation(fields: [id_renter], references: [id])
   property         Property @relation(fields: [id_property], references: [id])
+  start_date       DateTime?
+  end_date         DateTime?
+  rentAmount       Float?
+  paymentFrequency paymentFrequency?
   legalDocuments   LegalDocument[]
   contracts        Contract[]
 }
@@ -309,4 +321,12 @@ model Maintenance {
   owner            User     @relation(fields: [id_owner], references: [id], name: "OwnerMaintenanceRelation")
   user             User     @relation(fields: [id_user], references: [id], name: "UserMaintenanceRelation")
   payment          Payment? @relation(fields: [id_payment], references: [id_pay])
+}
+model NotificationToken {
+  id         String   @id @default(uuid())
+  id_user    String
+  token      String   @unique
+  role_user  String
+
+  user       User     @relation(fields: [id_user], references: [id])
 }
