@@ -1,4 +1,5 @@
 const { Expo } = require('expo-server-sdk');
+const { fa } = require('zod/locales');
 
 // Crear una nueva instancia de Expo SDK
 const expo = new Expo({
@@ -25,7 +26,8 @@ const sendPushNotification = async (pushToken, title, body, data = {}, options =
     // Configurar el mensaje
     const message = {
       to: pushToken,
-      sound: options.sound || 'default',
+      sound: 'default',
+      vibrate: true,
       title: title,
       body: body,
       data: data,
