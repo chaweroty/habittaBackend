@@ -75,6 +75,31 @@ class PaymentService {
     }
   }
 
+  /**
+   * Obtener el pago más reciente relacionado con una aplicación específica
+   * Devuelve el pago con la fecha de creación más reciente
+   */
+  async getLatestPaymentByApplication(applicationId) {
+    try {
+      if (!applicationId) return null;
+
+      const payment = await prisma.payment.findFirst({
+        where: {
+          id_related: applicationId,
+          related_type: 'rent'
+        },
+        orderBy: { created_at: 'desc' }
+      });
+
+      return payment;
+    } catch (err) {
+      console.error('PaymentService.getLatestPaymentByApplication error:', err);
+      return null;
+    }
+  }
+
+
+
   
 
   /**

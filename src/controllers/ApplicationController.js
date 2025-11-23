@@ -359,7 +359,7 @@ class ApplicationController {
           id_related: updatedApplication.id,
           concept: `Alquiler de ${application.property.title}`,
           description: `Pago mensual de alquiler - Período: ${new Date().toLocaleDateString('es-CO')} a ${new Date(new Date().setMonth(new Date().getMonth() + 1)).toLocaleDateString('es-CO')}`,
-          amount: application.rentAmount,
+          amount: updatedApplication.rentAmount,
           currency: 'COP',
           due_date: new Date(new Date().setMonth(new Date().getMonth() + 1)),
           status: 'pending'

@@ -1,5 +1,7 @@
 const { PaymentService } = require('../services/PaymentService.prisma');
+const { PrismaClient } = require('../generated/prisma');
 const paymentService = new PaymentService();
+const prisma = new PrismaClient();
 
 class PaymentController {
   async getMyPayments(req, res, next) {
@@ -8,6 +10,48 @@ class PaymentController {
 
       const mapped = await paymentService.getPaymentsForUser(userId);
       res.json({ success: true, data: mapped });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getLatestPaymentByApplication(req, res, next) {
+    try {
+      const { applicationId } = req.params;
+      const currentUserId = req.user && req.user.userId;
+
+      if (!currentUserId) {
+        return res.status(401).json({ success: false, message: 'Usuario no autenticado' });
+      }
+
+      // Verificar que la aplicación existe y que el usuario tiene permisos
+      const application = await prisma.application.findUnique({
+        where: { id: applicationId },
+        include: {
+          property: { select: { id_owner: true } }
+        }
+      });
+
+      if (!application) {
+        return res.status(404).json({
+          success: false,
+          message: 'Aplicación no encontrada'
+        });
+      }
+
+      const isRenter = application.id_renter === currentUserId;
+      const isOwner = application.property.id_owner === currentUserId;
+      const isAdmin = req.user.role === 'admin';
+
+      if (!isRenter && !isOwner && !isAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para ver los pagos de esta aplicación'
+        });
+      }
+
+      const payment = await paymentService.getLatestPaymentByApplication(applicationId);
+      res.json({ success: true, data: payment });
     } catch (error) {
       next(error);
     }

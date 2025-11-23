@@ -52,7 +52,7 @@ Visibilidad estándar en búsquedas. Ideal para propietarios ocasionales.`
       },
       {
         name: 'Plan Destacado',
-        price: 3, // $3/mes
+        price: 11900, // $3/mes
         duration_days: 30, // 0 = sin límite de tiempo mientras esté activo
         features: `Publicación sin límite de tiempo (vigente hasta concretar arriendo).\n
 Propiedad destacada en búsquedas y recomendaciones.\n

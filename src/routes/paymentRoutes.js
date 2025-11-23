@@ -6,6 +6,9 @@ const { authenticate } = require('../middleware/auth');
 // GET /api/payments/my - Obtener pagos relacionados al usuario autenticado (como pagador o receptor)
 router.get('/my', authenticate, PaymentController.getMyPayments);
 
+// GET /api/payments/application/:applicationId/latest - Obtener el pago más reciente de una aplicación específica
+router.get('/application/:applicationId/latest', authenticate, PaymentController.getLatestPaymentByApplication);
+
 // POST /api/payments/createPaymentIntent/:id - Crear PaymentIntent de Stripe
 router.post('/createPaymentIntent/:id', authenticate, PaymentController.createPaymentIntent);
 
