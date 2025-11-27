@@ -2,6 +2,8 @@ const { PrismaClient } = require('../generated/prisma');
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY || '');
 const prisma = new PrismaClient();
+const { sendPaymentConfirmationToSender, sendPaymentConfirmationToReceiver } = require('./emailService');
+const { sendPaymentCompletedToSenderNotification, sendPaymentReceivedNotification } = require('./pushNotificationService');
 
 class PaymentService {
   /**
@@ -294,10 +296,137 @@ class PaymentService {
 
       console.log(`Updated ${updated.count} payment(s) for PaymentIntent ${intent.id} to status ${mapping.status}`);
 
+      // Si el pago se completó exitosamente, enviar confirmaciones por email
+      if (mapping.status === 'completed' && updated.count > 0) {
+        try {
+          // Obtener el ID del pago actualizado para enviar confirmaciones
+          const updatedPayment = await prisma.payment.findFirst({
+            where: { reference_code: intent.id },
+            select: { id_pay: true }
+          });
+
+          if (updatedPayment) {
+            await this.sendPaymentConfirmations(updatedPayment.id_pay);
+          }
+        } catch (confirmationError) {
+          console.error('Error enviando confirmaciones de pago:', confirmationError);
+          // No lanzamos error para no afectar el webhook
+        }
+      }
+
       return { handled: true, updatedCount: updated.count, type };
     } catch (err) {
       console.error('PaymentService.handleStripeWebhook error:', err);
       throw err;
+    }
+  }
+
+  /**
+   * Enviar confirmaciones de pago por email y push notifications después de que un pago se complete
+   * @param {string} paymentId - ID del pago completado
+   */
+  async sendPaymentConfirmations(paymentId) {
+    try {
+      // Obtener el pago con información relacionada
+      const payment = await prisma.payment.findUnique({
+        where: { id_pay: paymentId },
+        include: {
+          payer: { select: { name: true, email: true } },
+          receiver: { select: { name: true, email: true } },
+          application: {
+            include: {
+              property: { select: { title: true } }
+            }
+          }
+        }
+      });
+
+      if (!payment || payment.status !== 'completed') {
+        console.log('Pago no encontrado o no completado, omitiendo envío de confirmaciones');
+        return;
+      }
+
+      // Preparar datos comunes para ambos emails
+      const paymentData = {
+        concepto: payment.concept,
+        monto: payment.amount,
+        moneda: payment.currency,
+        fecha_pago: payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('es-CO') : new Date().toLocaleDateString('es-CO'),
+        referencia: payment.reference_code,
+        es_alquiler: payment.related_type === 'rent'
+      };
+
+      // Agregar información de propiedad si existe
+      if (payment.application?.property) {
+        paymentData.titulo_propiedad = payment.application.property.title;
+      }
+
+      // Enviar confirmación al pagador
+      if (payment.payer?.email) {
+        const senderData = {
+          ...paymentData,
+          nombre_pagador: payment.payer.name
+        };
+
+        try {
+          await sendPaymentConfirmationToSender(payment.payer.email, senderData);
+        } catch (emailError) {
+          console.error('Error enviando confirmación al pagador:', emailError);
+          // No lanzamos error para no interrumpir el proceso
+        }
+      }
+
+      // Enviar notificación push al pagador
+      if (payment.payer?.pushToken) {
+        try {
+          await sendPaymentCompletedToSenderNotification(
+            payment.payer.pushToken,
+            payment.concept,
+            payment.amount,
+            payment.currency
+          );
+        } catch (pushError) {
+          console.error('Error enviando notificación push al pagador:', pushError);
+          // No lanzamos error para no interrumpir el proceso
+        }
+      }
+
+      // Enviar confirmación al receptor
+      if (payment.receiver?.email) {
+        const receiverData = {
+          ...paymentData,
+          nombre_receptor: payment.receiver.name,
+          nombre_pagador: payment.payer?.name || 'Usuario'
+        };
+
+        try {
+          await sendPaymentConfirmationToReceiver(payment.receiver.email, receiverData);
+        } catch (emailError) {
+          console.error('Error enviando confirmación al receptor:', emailError);
+          // No lanzamos error para no interrumpir el proceso
+        }
+      }
+
+      // Enviar notificación push al receptor
+      if (payment.receiver?.pushToken) {
+        try {
+          await sendPaymentReceivedNotification(
+            payment.receiver.pushToken,
+            payment.payer?.name || 'Usuario',
+            payment.concept,
+            payment.amount,
+            payment.currency
+          );
+        } catch (pushError) {
+          console.error('Error enviando notificación push al receptor:', pushError);
+          // No lanzamos error para no interrumpir el proceso
+        }
+      }
+
+      console.log(`✅ Confirmaciones de pago enviadas para el pago ${paymentId}`);
+    } catch (error) {
+      console.error('❌ Error enviando confirmaciones de pago:', error);
+      // No lanzamos el error para no interrumpir el flujo de webhook
     }
   }
 }

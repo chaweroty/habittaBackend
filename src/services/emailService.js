@@ -129,6 +129,90 @@ const sendPasswordResetEmail = async (email, nombre, codigo) => {
 };
 
 /**
+ * Envía correo de confirmación de pago al pagador
+ * @param {string} email - Email del pagador
+ * @param {object} paymentData - Datos del pago
+ * @param {string} paymentData.nombre_pagador - Nombre del pagador
+ * @param {string} paymentData.concepto - Concepto del pago
+ * @param {number} paymentData.monto - Monto del pago
+ * @param {string} paymentData.moneda - Moneda (ej: COP)
+ * @param {string} paymentData.fecha_pago - Fecha del pago
+ * @param {string} paymentData.referencia - Código de referencia
+ * @param {string} [paymentData.titulo_propiedad] - Título de la propiedad (opcional)
+ * @param {boolean} [paymentData.es_alquiler] - Si es pago de alquiler (opcional)
+ */
+const sendPaymentConfirmationToSender = async (email, paymentData) => {
+  try {
+    const variables = {
+      nombre_pagador: paymentData.nombre_pagador,
+      concepto: paymentData.concepto,
+      monto: paymentData.monto.toLocaleString('es-CO'),
+      moneda: paymentData.moneda,
+      fecha_pago: paymentData.fecha_pago,
+      referencia: paymentData.referencia,
+      titulo_propiedad: paymentData.titulo_propiedad || '',
+      es_alquiler: paymentData.es_alquiler ? 'block' : 'none'
+    };
+
+    const htmlContent = loadAndProcessTemplate('payment_sender.html', variables);
+
+    await sendEmail(
+      email,
+      'Confirmación de Pago - Habitta',
+      htmlContent
+    );
+
+    console.log(`✅ Confirmación de pago enviada al pagador ${email}`);
+  } catch (error) {
+    console.error('❌ Error enviando confirmación de pago al pagador:', error);
+    throw error;
+  }
+};
+
+/**
+ * Envía correo de confirmación de pago al receptor
+ * @param {string} email - Email del receptor
+ * @param {object} paymentData - Datos del pago
+ * @param {string} paymentData.nombre_receptor - Nombre del receptor
+ * @param {string} paymentData.nombre_pagador - Nombre del pagador
+ * @param {string} paymentData.concepto - Concepto del pago
+ * @param {number} paymentData.monto - Monto del pago
+ * @param {string} paymentData.moneda - Moneda (ej: COP)
+ * @param {string} paymentData.fecha_pago - Fecha del pago
+ * @param {string} paymentData.referencia - Código de referencia
+ * @param {string} [paymentData.titulo_propiedad] - Título de la propiedad (opcional)
+ * @param {boolean} [paymentData.es_alquiler] - Si es pago de alquiler (opcional)
+ */
+const sendPaymentConfirmationToReceiver = async (email, paymentData) => {
+  try {
+    const variables = {
+      nombre_receptor: paymentData.nombre_receptor,
+      nombre_pagador: paymentData.nombre_pagador,
+      concepto: paymentData.concepto,
+      monto: paymentData.monto.toLocaleString('es-CO'),
+      moneda: paymentData.moneda,
+      fecha_pago: paymentData.fecha_pago,
+      referencia: paymentData.referencia,
+      titulo_propiedad: paymentData.titulo_propiedad || '',
+      es_alquiler: paymentData.es_alquiler ? 'block' : 'none'
+    };
+
+    const htmlContent = loadAndProcessTemplate('payment_receiver.html', variables);
+
+    await sendEmail(
+      email,
+      'Pago Recibido - Habitta',
+      htmlContent
+    );
+
+    console.log(`✅ Confirmación de pago recibido enviada al receptor ${email}`);
+  } catch (error) {
+    console.error('❌ Error enviando confirmación de pago al receptor:', error);
+    throw error;
+  }
+};
+
+/**
  * Función utilitaria para generar códigos de verificación
  * @param {number} length - Longitud del código (por defecto 6)
  * @returns {string} - Código generado
@@ -145,6 +229,8 @@ module.exports = {
   sendConfirmationEmail,
   sendOwnerVerifiedEmail,
   sendPasswordResetEmail,
+  sendPaymentConfirmationToSender,
+  sendPaymentConfirmationToReceiver,
   generateVerificationCode,
   // También exportar como EmailService para compatibilidad
   EmailService: {
@@ -152,6 +238,8 @@ module.exports = {
     sendConfirmationEmail,
     sendOwnerVerifiedEmail,
     sendPasswordResetEmail,
+    sendPaymentConfirmationToSender,
+    sendPaymentConfirmationToReceiver,
     generateVerificationCode
   }
 };
