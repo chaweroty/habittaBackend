@@ -1,5 +1,5 @@
 -- AlterTable
-ALTER TABLE `application` ADD COLUMN `end_date` DATETIME(3) NULL,
+ALTER TABLE `Application` ADD COLUMN `end_date` DATETIME(3) NULL,
     ADD COLUMN `paymentFrequency` ENUM('monthly', 'quarterly', 'biannual', 'annual') NULL,
     ADD COLUMN `rentAmount` DOUBLE NULL,
     ADD COLUMN `start_date` DATETIME(3) NULL;

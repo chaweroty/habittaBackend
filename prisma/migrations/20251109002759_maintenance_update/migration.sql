@@ -1,7 +1,7 @@
 /*
   Warnings:
 
-  - You are about to drop the column `id_tenant` on the `maintenance` table. All the data in the column will be lost.
+  - You are about to drop the column `id_tenant` on the `Maintenance` table. All the data in the column will be lost.
   - The values [scheduled,payment_pending,in_progress] on the enum `Maintenance_status` will be removed. If these variants are still used in the database, this will fail.
   - The values [tenant] on the enum `Maintenance_responsibility` will be removed. If these variants are still used in the database, this will fail.
   - The values [tenant] on the enum `Maintenance_created_by` will be removed. If these variants are still used in the database, this will fail.
@@ -10,13 +10,13 @@
 
 */
 -- DropForeignKey
-ALTER TABLE `maintenance` DROP FOREIGN KEY `Maintenance_id_tenant_fkey`;
+ALTER TABLE `Maintenance` DROP FOREIGN KEY `Maintenance_id_tenant_fkey`;
 
 -- DropIndex
-DROP INDEX `Maintenance_id_tenant_fkey` ON `maintenance`;
+DROP INDEX `Maintenance_id_tenant_fkey` ON `Maintenance`;
 
 -- AlterTable
-ALTER TABLE `maintenance` DROP COLUMN `id_tenant`,
+ALTER TABLE `Maintenance` DROP COLUMN `id_tenant`,
     ADD COLUMN `id_user` VARCHAR(191) NOT NULL,
     MODIFY `status` ENUM('pending', 'accepted', 'confirmed', 'rejected', 'completed') NOT NULL DEFAULT 'pending',
     MODIFY `responsibility` ENUM('owner', 'user') NOT NULL DEFAULT 'owner',
