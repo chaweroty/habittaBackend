@@ -1,5 +1,5 @@
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `lastName` VARCHAR(191) NULL;
+ALTER TABLE `User` ADD COLUMN `lastName` VARCHAR(191) NULL;
 
 -- CreateTable
 CREATE TABLE `Maintenance` (
