@@ -131,8 +131,8 @@ class ReviewService {
     const now = new Date();
 
     // Escenario 1: Inquilino se retira antes del cierre
-    if ((currentStatus === 'pre_approved' && newStatus === 'withdrawn') ||
-        (currentStatus === 'approved' && newStatus === 'withdrawn')) {
+    if ((currentStatus === 'pre_approved' && newStatus === 'withdrawn' && actorId === application.renter.id) ||
+        (currentStatus === 'approved' && newStatus === 'withdrawn' && actorId === application.renter.id)) {
       reviewData.push({
         id_author: application.property.id_owner, // El propietario evalúa
         id_receiver: actorId, // El inquilino es evaluado

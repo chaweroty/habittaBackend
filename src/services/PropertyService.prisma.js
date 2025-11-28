@@ -69,6 +69,9 @@ class PropertyService {
 
   async getAllProperties() {
     return prisma.property.findMany({
+      where: {
+        publication_status: { not: 'deleted' }
+      },
       include: { images: true }
     });
   }
@@ -101,14 +104,68 @@ class PropertyService {
   }
 
   async deleteProperty(id) {
-    await prisma.imageProperty.deleteMany({ where: { id_property: id } });
-    await prisma.property.delete({ where: { id } });
-    return true;
+    // Soft delete en transacción: cambiar estado de propiedad, rechazar aplicaciones activas y cancelar suscripciones
+    return prisma.$transaction(async (tx) => {
+      // 1. Rechazar todas las aplicaciones activas de esta propiedad
+      await tx.application.updateMany({
+        where: {
+          id_property: id,
+          status: {
+            notIn: ['rejected', 'withdrawn', 'terminated']
+          }
+        },
+        data: {
+          status: 'rejected'
+        }
+      });
+
+      // 2. Obtener la suscripción de esta propiedad
+      const subscription = await tx.subscription.findUnique({
+        where: { id_property: id },
+        select: { id: true }
+      });
+
+      // 3. Si existe suscripción, cancelarla y sus pagos pendientes
+      if (subscription) {
+        // 3.1. Cancelar la suscripción
+        await tx.subscription.update({
+          where: { id: subscription.id },
+          data: { status: 'cancelled' }
+        });
+
+        // 3.2. Cancelar pagos pendientes/procesando/atrasados de esa suscripción
+        await tx.payment.updateMany({
+          where: {
+            related_type: 'subscription',
+            id_related: subscription.id,
+            status: {
+              in: ['pending', 'processing', 'overdue']
+            }
+          },
+          data: {
+            status: 'cancelled'
+          }
+        });
+      }
+
+      // 4. Cambiar el estado de la propiedad a 'deleted'
+      const deletedProperty = await tx.property.update({
+        where: { id },
+        data: { 
+          publication_status: 'deleted'
+        }
+      });
+
+      return deletedProperty;
+    });
   }
 
   async getPropertiesByOwner(ownerId) {
     return prisma.property.findMany({
-      where: { id_owner: ownerId },
+      where: { 
+        id_owner: ownerId,
+        publication_status: { not: 'deleted' }
+      },
       include: { images: true }
     });
   }

@@ -28,7 +28,7 @@ const propertySchema = z.object({
   bathrooms: z.number().int().nonnegative(),
   area: z.number().positive(),
   services: z.string().min(1).max(2000, 'Los servicios no pueden exceder los 2000 caracteres'),
-  publication_status: z.enum(['published', 'rented', 'disabled', 'expired']).optional(),
+  publication_status: z.enum(['published', 'disabled']).optional(),
   images: z.array(imagePropertySchema).optional(),
   id_plan: z.number().int().optional(),
 });

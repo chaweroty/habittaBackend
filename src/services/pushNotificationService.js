@@ -307,7 +307,7 @@ const sendApplicationWithdrawnNotification = async (ownerPushToken, renterName, 
 };
 
 /**
- * Envía notificación cuando el contrato/aplicación termina (a la contraparte)
+ * Envía notificación de contrato finalizado 🏁',
  * @param {string} pushToken - Token de push del destinatario
  * @param {string} propertyTitle - Título de la propiedad
  */
@@ -329,6 +329,62 @@ const sendApplicationTerminatedNotification = async (pushToken, propertyTitle, t
   }
 };
 
+/**
+ * Envía notificación de pago completado al pagador
+ * @param {string} pushToken - Token de push del pagador
+ * @param {string} concepto - Concepto del pago
+ * @param {number} monto - Monto del pago
+ * @param {string} moneda - Moneda del pago
+ */
+const sendPaymentCompletedToSenderNotification = async (pushToken, concepto, monto, moneda) => {
+  try {
+    await sendPushNotification(
+      pushToken,
+      'Pago realizado ✅',
+      `Tu pago de ${monto.toLocaleString('es-CO')} ${moneda} por "${concepto}" ha sido procesado exitosamente.`,
+      {
+        type: 'payment_notification',
+        action: 'view_payments',
+        concepto,
+        monto,
+        moneda
+      }
+    );
+    console.log(`📱 Notificación de pago completado enviada al pagador`);
+  } catch (error) {
+    console.error('❌ Error enviando notificación de pago completado al pagador:', error);
+  }
+};
+
+/**
+ * Envía notificación de pago recibido al receptor
+ * @param {string} pushToken - Token de push del receptor
+ * @param {string} nombrePagador - Nombre del pagador
+ * @param {string} concepto - Concepto del pago
+ * @param {number} monto - Monto del pago
+ * @param {string} moneda - Moneda del pago
+ */
+const sendPaymentReceivedNotification = async (pushToken, nombrePagador, concepto, monto, moneda) => {
+  try {
+    await sendPushNotification(
+      pushToken,
+      'Pago recibido 💰',
+      `${nombrePagador} te ha pagado ${monto.toLocaleString('es-CO')} ${moneda} por "${concepto}".`,
+      {
+        type: 'payment_notification',
+        action: 'view_payments',
+        nombrePagador,
+        concepto,
+        monto,
+        moneda
+      }
+    );
+    console.log(`📱 Notificación de pago recibido enviada al receptor`);
+  } catch (error) {
+    console.error('❌ Error enviando notificación de pago recibido:', error);
+  }
+};
+
 // Exportar todas las funciones usando CommonJS
 module.exports = {
   sendWelcomeNotification,
@@ -345,6 +401,9 @@ module.exports = {
   sendContractSignedNotification,
   sendApplicationWithdrawnNotification,
   sendApplicationTerminatedNotification,
+  // Nuevas notificaciones de pagos
+  sendPaymentCompletedToSenderNotification,
+  sendPaymentReceivedNotification,
   // También exportar como PushNotificationService para compatibilidad
   PushNotificationService: {
     sendWelcomeNotification,
@@ -359,6 +418,8 @@ module.exports = {
     sendApplicationConfirmedByRenterNotification,
     sendContractSignedNotification,
     sendApplicationWithdrawnNotification,
-    sendApplicationTerminatedNotification
+    sendApplicationTerminatedNotification,
+    sendPaymentCompletedToSenderNotification,
+    sendPaymentReceivedNotification
   }
 };

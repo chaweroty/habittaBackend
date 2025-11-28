@@ -234,15 +234,28 @@ class ApplicationController {
         if (description !== undefined) updateData.description = description;
       }
 
+      // Si el status cambia a 'signed', establecer automáticamente start_date, end_date y rentAmount
+      if (status === 'signed' && currentStatus !== 'signed') {
+        const now = new Date();
+        const oneMonthLater = new Date(now);
+        oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+        
+        updateData.start_date = now;
+        updateData.end_date = oneMonthLater;
+        updateData.rentAmount = application.property.price;
+        updateData.paymentFrequency = 'monthly';
+        console.log('Asignando start_date, end_date, rentAmount y paymentFrequency al firmar el contrato');
+      }
+
       const updatedApplication = await applicationService.updateApplication(id, updateData);
       
       // ========== ENVÍO DE NOTIFICACIONES SEGÚN EL ESTADO ==========
       if (status && status !== currentStatus) {
         try {
           const propertyTitle = application.property.title || 'la propiedad';
-          const renterName = `${application.renter.name} ${application.renter.lastName}`;
+          const renterName = `${application.renter.name}`;
           const ownerName = application.property.owner ? 
-            `${application.property.owner.name} ${application.property.owner.lastName}` : 
+            `${application.property.owner.name}` : 
             'el propietario';
           
           // Determinar la contraparte según quién hizo la actualización
@@ -336,6 +349,21 @@ class ApplicationController {
         // Cambiar el estado de la propiedad a 'rented' cuando la aplicación se firma
         const propertyService = new (require('../services/PropertyService.prisma')).PropertyService();
         await propertyService.setStatusRented(application.id_property);
+        
+        // Crear pago de alquiler
+        const paymentService = new (require('../services/PaymentService.prisma')).PaymentService();
+        await paymentService.createPayment({
+          id_payer: application.id_renter,
+          id_receiver: application.property.id_owner,
+          related_type: 'rent',
+          id_related: updatedApplication.id,
+          concept: `Alquiler de ${application.property.title}`,
+          description: `Pago mensual de alquiler - Período: ${new Date().toLocaleDateString('es-CO')} a ${new Date(new Date().setMonth(new Date().getMonth() + 1)).toLocaleDateString('es-CO')}`,
+          amount: updatedApplication.rentAmount,
+          currency: 'COP',
+          due_date: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+          status: 'pending'
+        });
       } else if (status === 'terminated') {
         // Cambiar el estado de la propiedad a 'published' cuando la aplicación se termina
         const propertyService = new (require('../services/PropertyService.prisma')).PropertyService();

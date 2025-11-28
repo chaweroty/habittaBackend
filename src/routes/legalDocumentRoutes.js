@@ -13,11 +13,18 @@ router.post('/', authenticate, LegalDocumentController.create);
 // POST /api/legal-documents/verify_identity
 router.post('/verify_identity', authenticate, authorize(['owner']), validateBody(createVerifyIdentitySchema), LegalDocumentController.verifyIdentity);
 
+// Endpoint específico para crear documento legal asociado a una application
+// POST /api/legal-documents/application
+router.post('/application', authenticate, LegalDocumentController.createForApplication);
+
 // GET /api/legal-documents/identity_pending - Obtener todos los identity_documents con status pending (solo admin)
 router.get('/identity_pending', authenticate, authorize(['admin']), LegalDocumentController.getPendingIdentityDocuments);
 
 // Obtener documentos de un usuario (belongs_to = 'user')
 router.get('/user/:userId', authenticate, LegalDocumentController.getByUser);
+
+// Obtener documentos de una application (belongs_to = 'application')
+router.get('/application/:applicationId', authenticate, LegalDocumentController.getByApplication);
 
 // Obtener un documento legal por ID
 router.get('/:id', LegalDocumentController.getById);

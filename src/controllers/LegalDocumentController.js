@@ -33,6 +33,66 @@ class LegalDocumentController {
     }
   }
 
+  async createForApplication(req, res, next) {
+    try {
+      const currentUserId = req.user && req.user.userId;
+      if (!currentUserId) {
+        return res.status(401).json({ success: false, message: 'Usuario no autenticado' });
+      }
+
+      const { id_application, type, description, url_document, status } = req.body;
+
+      if (!id_application || !type || !url_document) {
+        return res.status(400).json({
+          success: false,
+          message: 'id_application, type y url_document son requeridos'
+        });
+      }
+
+      // Verificar que la application existe y que el usuario es el renter o el owner
+      const application = await prisma.application.findUnique({
+        where: { id: id_application },
+        include: {
+          property: { select: { id_owner: true } }
+        }
+      });
+
+      if (!application) {
+        return res.status(404).json({
+          success: false,
+          message: 'Application no encontrada'
+        });
+      }
+
+      const isRenter = application.id_renter === currentUserId;
+      const isOwner = application.property.id_owner === currentUserId;
+      const isAdmin = req.user.role === 'admin';
+
+      if (!isRenter && !isOwner && !isAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para crear documentos en esta application'
+        });
+      }
+
+      const legalDocument = await legalDocumentService.createForApplication({
+        id_application,
+        type,
+        description,
+        url_document,
+        status
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Documento legal asociado a la application creado exitosamente',
+        data: legalDocument
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getPendingIdentityDocuments(req, res, next) {
     try {
       const docs = await legalDocumentService.getPendingIdentityDocuments();
@@ -236,6 +296,46 @@ class LegalDocumentController {
       const { userId } = req.params;
 
       const docs = await legalDocumentService.getDocumentsByUser(userId);
+      res.json({ success: true, data: docs });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Obtener todos los documentos pertenecientes a una application (belongs_to = 'application')
+  async getByApplication(req, res, next) {
+    try {
+      const { applicationId } = req.params;
+      const currentUserId = req.user && req.user.userId;
+
+      if (!currentUserId) {
+        return res.status(401).json({ success: false, message: 'Usuario no autenticado' });
+      }
+
+      // Verificar que la application existe y que el usuario tiene permisos
+      const application = await prisma.application.findUnique({
+        where: { id: applicationId },
+        include: {
+          property: { select: { id_owner: true } }
+        }
+      });
+
+      if (!application) {
+        return res.status(404).json({ success: false, message: 'Application no encontrada' });
+      }
+
+      const isRenter = application.id_renter === currentUserId;
+      const isOwner = application.property.id_owner === currentUserId;
+      const isAdmin = req.user.role === 'admin';
+
+      if (!isRenter && !isOwner && !isAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para ver los documentos de esta application'
+        });
+      }
+
+      const docs = await legalDocumentService.getDocumentsByApplication(applicationId);
       res.json({ success: true, data: docs });
     } catch (error) {
       next(error);

@@ -6,8 +6,13 @@ const { authenticate } = require('../middleware/auth');
 // GET /api/payments/my - Obtener pagos relacionados al usuario autenticado (como pagador o receptor)
 router.get('/my', authenticate, PaymentController.getMyPayments);
 
+// GET /api/payments/application/:applicationId/latest - Obtener el pago más reciente de una aplicación específica
+router.get('/application/:applicationId/latest', authenticate, PaymentController.getLatestPaymentByApplication);
+
+// POST /api/payments/createPaymentIntent/:id - Crear PaymentIntent de Stripe
 router.post('/createPaymentIntent/:id', authenticate, PaymentController.createPaymentIntent);
 
-// Stripe webhook endpoint (must accept raw body and no auth)
-router.post('/webhook', express.raw({ type: 'application/json' }), PaymentController.handleWebhook);
+// NOTA: La ruta /webhook se registra directamente en app.js ANTES del middleware express.json()
+// para que pueda recibir el raw body (Buffer) requerido por Stripe para verificar la firma
+
 module.exports = router;

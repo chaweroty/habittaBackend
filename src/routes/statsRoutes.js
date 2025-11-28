@@ -20,4 +20,12 @@ router.get('/owner/:ownerId',
   statsController.getOwnerStats
 );
 
+// GET /stats/income/:ownerId?period=3months - Obtener ingresos del propietario por período
+router.get('/income/:ownerId', 
+  authenticate, 
+  authorize(['owner', 'admin']), 
+  validateParams(ownerIdParamsSchema), 
+  statsController.getOwnerIncome
+);
+
 module.exports = router;

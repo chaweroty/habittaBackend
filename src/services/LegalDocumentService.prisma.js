@@ -25,6 +25,23 @@ class LegalDocumentService {
     return await prisma.legalDocument.create({ data: payload });
   }
 
+  /**
+   * Crea un documento legal asociado a una application
+   * @param {{ id_application: string, type: string, description?: string|null, url_document: string, status?: string }} data
+   */
+  async createForApplication(data) {
+    const payload = {
+      id_application: data.id_application,
+      belongs_to: 'application',
+      type: data.type,
+      description: data.description || `Documento ${data.type} para la solicitud`,
+      url_document: data.url_document,
+      status: data.status || 'pending'
+    };
+
+    return await prisma.legalDocument.create({ data: payload });
+  }
+
   async getAll() {
     return await prisma.legalDocument.findMany({ orderBy: { upload_date: 'desc' } });
   }
@@ -51,6 +68,16 @@ class LegalDocumentService {
       where: {
         id_user: userId,
         belongs_to: 'user'
+      },
+      orderBy: { upload_date: 'desc' }
+    });
+  }
+
+  async getDocumentsByApplication(applicationId) {
+    return await prisma.legalDocument.findMany({
+      where: {
+        id_application: applicationId,
+        belongs_to: 'application'
       },
       orderBy: { upload_date: 'desc' }
     });

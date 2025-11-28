@@ -11,6 +11,7 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const legalDocumentRoutes = require('./routes/legalDocumentRoutes');
 const planRoutes = require('./routes/planRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const maintenanceRoutes = require('./routes/maintenanceRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 class App {
@@ -29,7 +30,15 @@ class App {
       credentials: true
     }));
 
-    // Body parsers
+    // Stripe webhook endpoint ANTES del body parser (necesita raw body)
+    // Debe ir antes de express.json() para recibir el Buffer sin parsear
+    const PaymentController = require('./controllers/PaymentController');
+    this.app.post('/api/payments/webhook', 
+      express.raw({ type: 'application/json' }), 
+      PaymentController.handleWebhook
+    );
+
+    // Body parsers (aplican a todas las demás rutas)
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -61,6 +70,7 @@ class App {
     this.app.use('/api/legal-documents', legalDocumentRoutes);
     this.app.use('/api/plans', planRoutes);
     this.app.use('/api/payments', paymentRoutes);
+    this.app.use('/api/maintenances', maintenanceRoutes);
 
     // Ruta base
     this.app.get('/', (req, res) => {
@@ -113,6 +123,16 @@ class App {
             update: 'PUT /api/reviews/:id',
             delete: 'DELETE /api/reviews/:id',
             disable: 'PATCH /api/reviews/:id/disable'
+          },
+          maintenances: {
+            getAll: 'GET /api/maintenances (admin)',
+            getById: 'GET /api/maintenances/:id',
+            getMy: 'GET /api/maintenances/my',
+            getMyOwner: 'GET /api/maintenances/my-owner',
+            getByProperty: 'GET /api/maintenances/property/:propertyId',
+            create: 'POST /api/maintenances',
+            update: 'PATCH /api/maintenances/:id',
+            delete: 'DELETE /api/maintenances/:id'
           }
         }
       });

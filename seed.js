@@ -38,6 +38,9 @@ async function main() {
     users.push(user);
   }
 
+  // Filtrar owners
+  const owners = users.filter(u => u.role === 'owner');
+
   // --- Crear planes de negocio si no existen (DEBE ejecutarse antes de crear propiedades) ---
   const planCount = await prisma.plan.count();
   if (planCount === 0) {
@@ -52,7 +55,7 @@ Visibilidad estándar en búsquedas. Ideal para propietarios ocasionales.`
       },
       {
         name: 'Plan Destacado',
-        price: 3, // $3/mes
+        price: 11900, // $3/mes
         duration_days: 30, // 0 = sin límite de tiempo mientras esté activo
         features: `Publicación sin límite de tiempo (vigente hasta concretar arriendo).\n
 Propiedad destacada en búsquedas y recomendaciones.\n
@@ -110,9 +113,8 @@ Incluye el seguro para cubrir imprevistos.`
   const properties = [];
   const propertyTypes = ['house', 'apartament', 'store', 'office', 'werehouse'];
   const cities = ['Medellin', 'Bogota', 'Manizales', 'Cartagena', 'Barranquilla', 'Cali', 'Bucaramanga'];
-  const publicationStatuses = ['published', 'rented', 'disabled', 'expired'];
   for (let i = 0; i < 10; i++) {
-    const owner = faker.helpers.arrayElement(users);
+    const owner = faker.helpers.arrayElement(owners);
     const property = await prisma.property.create({
       data: {
         id_owner: owner.id,
@@ -126,7 +128,7 @@ Incluye el seguro para cubrir imprevistos.`
         bathrooms: faker.number.int({ min: 1, max: 4 }),
         area: faker.number.int({ min: 40, max: 300 }),
         services: 'Agua, Luz, Gas',
-        publication_status: faker.helpers.arrayElement(publicationStatuses),
+        publication_status: 'published',
       }
     });
     properties.push(property);
@@ -163,7 +165,7 @@ Incluye el seguro para cubrir imprevistos.`
     }
   }
 
-  // 4. Crear aplicaciones (applications)
+  // 4. Crear aplicaciones (applications) - incluyendo algunas rented con pagos
   const applicationStatuses = ['pending', 'pending', 'pending', 'rejected', 'withdrawn', 'documents_required'];
   // Filtrar usuarios con role 'user' para asignar como renters
   let renters = users.filter(u => u.role === 'user');
@@ -187,7 +189,8 @@ Incluye el seguro para cubrir imprevistos.`
     }
   }
 
-  for (let i = 0; i < 15; i++) {
+  // Crear aplicaciones normales
+  for (let i = 0; i < 10; i++) {
     const property = faker.helpers.arrayElement(properties);
     const renter = faker.helpers.arrayElement(renters);
     await prisma.application.create({
@@ -198,6 +201,142 @@ Incluye el seguro para cubrir imprevistos.`
         description: faker.lorem.sentence(),
       }
     });
+  }
+
+  // Crear aplicaciones rented (signed) con pagos - 3-5 aplicaciones
+  const numRentedApplications = faker.number.int({ min: 3, max: 5 });
+  const rentedApplications = [];
+
+  for (let i = 0; i < numRentedApplications; i++) {
+    // Seleccionar una propiedad que no esté ya rented
+    const availableProperties = properties.filter(p => p.publication_status !== 'rented');
+    if (availableProperties.length === 0) break; // No hay más propiedades disponibles
+
+    const property = faker.helpers.arrayElement(availableProperties);
+    const renter = faker.helpers.arrayElement(renters);
+
+    // Generar fecha aleatoria en el último año
+    const applicationDate = faker.date.between({
+      from: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 año atrás
+      to: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // 30 días atrás
+    });
+
+    // Calcular fechas de contrato
+    const startDate = new Date(applicationDate);
+    startDate.setDate(startDate.getDate() + 7); // 7 días después de la aplicación
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1); // 1 mes de contrato
+
+    const rentedApplication = await prisma.application.create({
+      data: {
+        id_renter: renter.id,
+        id_property: property.id,
+        status: 'signed',
+        description: faker.lorem.sentence(),
+        start_date: startDate,
+        end_date: endDate,
+        rentAmount: property.price,
+        paymentFrequency: 'monthly'
+      }
+    });
+
+    rentedApplications.push({
+      application: rentedApplication,
+      property,
+      startDate,
+      endDate
+    });
+
+    // Marcar la propiedad como rented
+    await prisma.property.update({
+      where: { id: property.id },
+      data: { publication_status: 'rented' }
+    });
+
+    // Crear pagos mensuales para esta aplicación rented
+    await createPaymentsForRentedApplication(rentedApplication, property, startDate);
+  }
+
+  // Ensure each owner has at least one rented property
+  for (const owner of owners) {
+    const ownerProperties = properties.filter(p => p.id_owner === owner.id);
+    const hasRented = ownerProperties.some(p => p.publication_status === 'rented');
+    if (!hasRented && ownerProperties.length > 0) {
+      // Pick a property that is not rented
+      const availableProp = ownerProperties.find(p => p.publication_status !== 'rented');
+      if (availableProp) {
+        // Create a signed application
+        const renter = faker.helpers.arrayElement(renters);
+        const applicationDate = faker.date.between({
+          from: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+          to: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        });
+        const startDate = new Date(applicationDate);
+        startDate.setDate(startDate.getDate() + 7);
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + 1);
+        const rentedApplication = await prisma.application.create({
+          data: {
+            id_renter: renter.id,
+            id_property: availableProp.id,
+            status: 'signed',
+            description: faker.lorem.sentence(),
+            start_date: startDate,
+            end_date: endDate,
+            rentAmount: availableProp.price,
+            paymentFrequency: 'monthly'
+          }
+        });
+        // Mark property as rented
+        await prisma.property.update({
+          where: { id: availableProp.id },
+          data: { publication_status: 'rented' }
+        });
+        // Create payments
+        await createPaymentsForRentedApplication(rentedApplication, availableProp, startDate);
+      }
+    }
+  }
+
+  // Función auxiliar para crear pagos mensuales
+  async function createPaymentsForRentedApplication(application, property, startDate) {
+    const now = new Date();
+    const currentMonth = new Date(startDate);
+
+    // Crear pagos para cada mes desde la fecha de inicio hasta ahora + 1 mes futuro
+    while (currentMonth <= new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)) { // +30 días en el futuro
+      const paymentDate = currentMonth <= now ? faker.date.between({
+        from: new Date(currentMonth.getTime() + 25 * 24 * 60 * 60 * 1000), // Día 25-30 del mes
+        to: new Date(currentMonth.getTime() + 30 * 24 * 60 * 60 * 1000)  // Día 30 del mes
+      }) : null;
+
+      const dueDate = new Date(currentMonth);
+      dueDate.setMonth(dueDate.getMonth() + 1); // Vence el mes siguiente
+
+      const isPastPayment = currentMonth < now;
+      const paymentStatus = isPastPayment ? 'completed' : 'pending';
+
+      await prisma.payment.create({
+        data: {
+          id_payer: application.id_renter,
+          id_receiver: property.id_owner,
+          related_type: 'rent',
+          id_related: application.id,
+          concept: `Alquiler de ${property.title}`,
+          description: `Pago mensual de alquiler - Período: ${currentMonth.toLocaleDateString('es-CO')} a ${dueDate.toLocaleDateString('es-CO')}`,
+          amount: application.rentAmount,
+          currency: 'COP',
+          method: isPastPayment ? faker.helpers.arrayElement(['card', 'bank_transfer', 'app_transfer']) : null,
+          payment_date: paymentDate,
+          due_date: dueDate,
+          reference_code: `rent_${Date.now()}_${Math.floor(Math.random()*10000)}`,
+          status: paymentStatus
+        }
+      });
+
+      // Avanzar al siguiente mes
+      currentMonth.setMonth(currentMonth.getMonth() + 1);
+    }
   }
 
 // (Bloque de creación de planes movido arriba para ejecutarse antes de properties)
